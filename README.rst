@@ -39,7 +39,7 @@ to manually walk the tree, starting from the level of highest priority.
 
 .. code-block:: python
 
-    >>> tree = p.highest_priority()
+    >>> tree = p.priorities()
     >>> tree
     PriorityLevel<total_weight=64, streams=[Stream<id=1, weight=16>, Stream<id=3, weight=16>, Stream<id=7, weight=32]>,
 
@@ -82,6 +82,43 @@ of the streams that should be satisfied, and their weights.
     True
 
 
+Querying The Tree: Gate
+~~~~~~~~~~~~~~~~~~~~~~~
+
+The Priority 'gate' is an alternative approach of accessing HTTP/2 priorities
+based on `this presentation`_. It works by providing an iterator that acts as a
+'gate'. Each value popped off the iterator is the next stream that should be
+acted on. The PriorityTree can be mutated on the fly to add, remove, block, and
+unblock streams, which affects what the next value from the iterator will be.
+
+This works well when combined with some kind of signaling mechanism to block
+and unblock threads of execution. This would allow you to do something like
+this:
+
+.. code-block:: python
+
+    >>> for stream_id in p.gate():
+    ...     unblock(stream_id)  # Sends a single DATA frame.
+
+In this circumstance, each time a stream is unblocked it should send a single
+DATA frame and then go back to waiting to be unblocked. This way we ensure that
+the data from streams is correctly multiplexed.
+
+You can also block and unblock streams in the iterator, like so:
+
+For example:
+
+.. code-block:: python
+
+    >>> for stream_id in p.gate()
+    ...    now_blocked = unblock(stream_id)
+    ...    if now_blocked:
+    ...        p.blocked(stream_id)
+    ...    unblocked = all_unblocked_streams()
+    ...    for unblocked_stream_id in unblocked:
+    ...        p.unblock(unblocked_stream_id)
+
+
 License
 -------
 
@@ -97,3 +134,4 @@ repository.
 
 
 .. _RFC 7540 Section 5.3 (Stream Priority): https://tools.ietf.org/html/rfc7540#section-5.3
+.. _this presentation: http://example.com/
