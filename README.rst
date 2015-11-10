@@ -41,7 +41,7 @@ to manually walk the tree, starting from the level of highest priority.
 
     >>> tree = p.priorities()
     >>> tree
-    PriorityLevel<total_weight=64, streams=[Stream<id=1, weight=16>, Stream<id=3, weight=16>, Stream<id=7, weight=32]>,
+    PrioritySet<total_weight=64, streams=[Stream<id=1, weight=16>, Stream<id=3, weight=16>, Stream<id=7, weight=32]>,
 
 Currently, these streams are all the highest priority: they do not depend on
 another stream, and so should be served first if resources are available. Of
@@ -50,17 +50,17 @@ with streams 1 and 3 receiving 1/4 of the resources available each.
 
 If for any reason a stream is blocked or cannot be served (e.g. because you
 are waiting on I/O), you can allocate the resources that were intended for that
-stream to its dependents. To do this, index into the ``PriorityLevel`` by
+stream to its dependents. To do this, index into the ``PrioritySet`` by
 stream ID. For example, if you were unable to serve stream 7:
 
 .. code-block:: python
 
     >>> dependents = tree[7]
     >>> dependents
-    PriorityLevel<total_weight=16, streams=[Stream<id=11, weight=16>]>
+    PrioritySet<total_weight=16, streams=[Stream<id=11, weight=16>]>
     >>> second_level_dependents = dependents[11]
     >>> second_level_dependents
-    PriorityLevel<total_weight=8, streams=[Stream<id=9, weight=8>]>
+    PrioritySet<total_weight=8, streams=[Stream<id=9, weight=8>]>
 
 Here, if stream 7 could not be served, all its resources should be diverted to
 serving stream 11. If that were also unable to be served, we should instead
@@ -77,7 +77,7 @@ of the streams that should be satisfied, and their weights.
 
     >>> priorities = p.priorities(blocked=[1, 5, 7])
     >>> priorities
-    PriorityLevel<total_weight=48, streams=[Stream<id=3, weight=16>, Stream<id=11, weight=32>]>
+    PrioritySet<total_weight=48, streams=[Stream<id=3, weight=16>, Stream<id=11, weight=32>]>
     >>> p.priorities(blocked=[1, 5, 7]) == p.priorities(unblocked=[3, 9, 11])
     True
 
