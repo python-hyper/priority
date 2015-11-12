@@ -64,3 +64,18 @@ class TestPriorityTree(object):
 
         for stream_id, weight in stream_data:
             assert weight == priorities.stream_weight(stream_id)
+
+    def test_drilling_down(self, readme_tree):
+        """
+        We can drill down each layer of the tree by stream ID.
+        """
+        top_level = readme_tree.priorities()
+        assert 7 in top_level
+
+        dependents = top_level[7]
+        assert len(dependents) == 1
+        assert 11 in dependents
+
+        second_level_dependents = dependents[11]
+        assert len(second_level_dependents) == 1
+        assert 9 in second_level_dependents
