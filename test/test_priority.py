@@ -6,9 +6,17 @@ test_priority
 Tests for the Priority trees
 """
 from hypothesis import given
-from hypothesis.strategies import integers, lists
+from hypothesis.strategies import integers, lists, tuples
 
 import priority
+
+
+STREAMS_AND_WEIGHTS = lists(
+    elements=tuples(
+        integers(min_value=1), integers(min_value=1, max_value=255)
+    ),
+    unique_by=lambda x: x[0],
+)
 
 
 class TestPriorityTree(object):
@@ -40,3 +48,19 @@ class TestPriorityTree(object):
         priorities = p.priorities()
         assert len(priorities) == len(weights)
         assert priorities.total_weight == sum(weights)
+
+    @given(STREAMS_AND_WEIGHTS)
+    def test_priorities_stream_weights(self, stream_data):
+        """
+        For a given set of priorities, we can index by ID and find the weight
+        of the stream.
+        """
+        p = priority.PriorityTree()
+
+        for stream_id, weight in stream_data:
+            p.insert_stream(stream_id=stream_id, weight=weight)
+
+        priorities = p.priorities()
+
+        for stream_id, weight in stream_data:
+            assert weight == priorities.stream_weight(stream_id)

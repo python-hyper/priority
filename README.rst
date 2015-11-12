@@ -39,9 +39,11 @@ to manually walk the tree, starting from the level of highest priority.
 
 .. code-block:: python
 
-    >>> tree = p.priorities()
-    >>> tree
-    Priorities<total_weight=64, streams=[Stream<id=1, weight=16>, Stream<id=3, weight=16>, Stream<id=7, weight=32]>,
+    >>> priorities = p.priorities()
+    >>> priorities
+    Priorities<total_weight=64, streams=[Stream<id=1, weight=16>, Stream<id=3, weight=16>, Stream<id=7, weight=32]>
+    >>> priorities.stream_weight(1)
+    16
 
 Currently, these streams are all the highest priority: they do not depend on
 another stream, and so should be served first if resources are available. Of
@@ -55,7 +57,7 @@ stream ID. For example, if you were unable to serve stream 7:
 
 .. code-block:: python
 
-    >>> dependents = tree[7]
+    >>> dependents = priorities[7]
     >>> dependents
     Priorities<total_weight=16, streams=[Stream<id=11, weight=16>]>
     >>> second_level_dependents = dependents[11]

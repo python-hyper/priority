@@ -51,6 +51,9 @@ class Priorities(Mapping):
 
         return self._total_weight
 
+    def stream_weight(self, stream_id):
+        return self._nodes[stream_id].weight
+
     # Abstract methods for Mapping
     def __getitem__(self, key):
         node = self._nodes[key]
