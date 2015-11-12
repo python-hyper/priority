@@ -75,7 +75,9 @@ class TestPriorityTree(object):
         dependents = top_level[7]
         assert len(dependents) == 1
         assert 11 in dependents
+        assert dependents.total_weight == 16
 
         second_level_dependents = dependents[11]
         assert len(second_level_dependents) == 1
         assert 9 in second_level_dependents
+        assert second_level_dependents.total_weight == 8
