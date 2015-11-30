@@ -21,6 +21,20 @@ class Stream(object):
     def __repr__(self):
         return "Stream<id=%d, weight=%d>" % (self.stream_id, self.weight)
 
+    # Custom equality
+    def __eq__(self, other):
+        if not isinstance(other, self.__class__):
+            return False
+
+        return (
+            self.stream_id == other.stream_id and
+            self.weight == other.weight and
+            self.children == other.children
+        )
+
+    def __ne__(self, other):
+        return not self.__eq__(other)
+
 
 class Priorities(Mapping):
     """
@@ -65,6 +79,15 @@ class Priorities(Mapping):
 
     def __len__(self):
         return len(self._nodes)
+
+    def __eq__(self, other):
+        if not isinstance(other, self.__class__):
+            return False
+
+        return self._nodes == other._nodes
+
+    def __ne__(self, other):
+        return not self.__eq__(other)
 
     # Custom repr
     def __repr__(self):
