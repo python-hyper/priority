@@ -5,6 +5,8 @@ test_priority
 
 Tests for the Priority trees
 """
+import itertools
+
 from hypothesis import given
 from hypothesis.strategies import integers, lists, tuples
 
@@ -17,6 +19,15 @@ STREAMS_AND_WEIGHTS = lists(
     ),
     unique_by=lambda x: x[0],
 )
+
+
+class TestStream(object):
+    def test_stream_repr(self):
+        """
+        The stream representation renders according to the README.
+        """
+        s = priority.Stream(stream_id=80, weight=16)
+        assert repr(s) == "Stream<id=80, weight=16>"
 
 
 class TestPriorityTree(object):
@@ -64,6 +75,30 @@ class TestPriorityTree(object):
 
         for stream_id, weight in stream_data:
             assert weight == priorities.stream_weight(stream_id)
+
+    def test_priorities_repr(self, readme_tree):
+        """
+        The priorities representation renders according to the README.
+        """
+        priorities = readme_tree.priorities()
+        r = repr(priorities)
+
+        # Dictionaries hurt ordering, so just check all possible orderings.
+        stream_reprs = [
+            'Stream<id=1, weight=16>',
+            'Stream<id=3, weight=16>',
+            'Stream<id=7, weight=32>',
+        ]
+        possible_orderings = [
+            ', '.join(permutation)
+            for permutation in itertools.permutations(stream_reprs)
+        ]
+        base_repr = "Priorities<total_weight=64, streams=[%s]>"
+        all_reprs = [
+            base_repr % streams for streams in possible_orderings
+        ]
+
+        assert any(r == representation for representation in all_reprs)
 
     def test_drilling_down(self, readme_tree):
         """
