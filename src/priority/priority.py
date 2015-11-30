@@ -176,7 +176,6 @@ class PriorityTree(object):
             unblocked = set(unblocked)
             all_stream_ids = set(self._streams.keys())
             blocked = all_stream_ids - unblocked
-            print blocked
 
         assert blocked is not None
 
