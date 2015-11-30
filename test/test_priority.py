@@ -81,3 +81,26 @@ class TestPriorityTree(object):
         assert len(second_level_dependents) == 1
         assert 9 in second_level_dependents
         assert second_level_dependents.total_weight == 8
+
+    def test_automatic_resolution(self, readme_tree):
+        """
+        Implements the automatic resolution logic from the README.
+        """
+        priorities = readme_tree.priorities(blocked=[1, 5, 7])
+        assert priorities.total_weight == 48
+        assert len(priorities) == 2
+        assert 3 in priorities
+        assert 11 in priorities
+
+        assert priorities.stream_weight(3) == 16
+        assert priorities.stream_weight(11) == 32
+
+    def test_automatic_resolution_blocked_unblock_match(self, readme_tree):
+        """
+        Tests that the automatic resolution logic correctly inverts the logic
+        of blocked and unblocked so that they produce the same results.
+        """
+        blocked = readme_tree.priorities(blocked=[1, 5, 7])
+        unblocked = readme_tree.priorities(unblocked=[3, 9, 11])
+
+        assert blocked == unblocked
