@@ -88,10 +88,14 @@ Querying The Tree: Gate
 ~~~~~~~~~~~~~~~~~~~~~~~
 
 The Priority 'gate' is an alternative approach of accessing HTTP/2 priorities
-based on `this presentation`_. It works by providing an iterator that acts as a
-'gate'. Each value popped off the iterator is the next stream that should be
-acted on. The PriorityTree can be mutated on the fly to add, remove, block, and
-unblock streams, which affects what the next value from the iterator will be.
+based on a modified version of the `approach used by nghttp2`_, which itself is
+based on the approach used in H2O. Our implementation more closely ties to the
+version used by H2O.
+
+It works by providing an iterator that acts as a 'gate'. Each value popped off
+the iterator is the next stream that should be acted on. The underlying
+``PriorityTree`` can be mutated on the fly to add, remove, block, and unblock
+streams, which affects what the next value from the iterator will be.
 
 This works well when combined with some kind of signaling mechanism to block
 and unblock threads of execution. This would allow you to do something like
@@ -115,7 +119,7 @@ For example:
     >>> for stream_id in p.gate()
     ...    now_blocked = unblock(stream_id)
     ...    if now_blocked:
-    ...        p.blocked(stream_id)
+    ...        p.block(stream_id)
     ...    unblocked = all_unblocked_streams()
     ...    for unblocked_stream_id in unblocked:
     ...        p.unblock(unblocked_stream_id)
@@ -136,4 +140,4 @@ repository.
 
 
 .. _RFC 7540 Section 5.3 (Stream Priority): https://tools.ietf.org/html/rfc7540#section-5.3
-.. _this presentation: http://example.com/
+.. _approach used by nghttp2: https://nghttp2.org/blog/2015/11/11/stream-scheduling-utilizing-http2-priority/
