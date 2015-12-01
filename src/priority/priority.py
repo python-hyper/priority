@@ -8,6 +8,11 @@ Implementation of the Priority tree data structure.
 from collections import Mapping, deque
 from copy import copy
 
+try:
+    import Queue as queue
+except ImportError:  # Python 3:
+    import queue
+
 
 class Stream(object):
     """
@@ -17,6 +22,46 @@ class Stream(object):
         self.stream_id = stream_id
         self.weight = weight
         self.children = []
+        self.child_queue = queue.PriorityQueue()
+        self.active = True
+        self.last_weight = 0
+
+    def add_child(self, child):
+        """
+        Add a stream that depends on this one.
+        """
+        self.children.append(child)
+        self.child_queue.put((self.current_val, child))
+
+    def add_child_exclusive(self, child):
+        """
+        Add a stream that exclusively depends on this one.
+        """
+        old_children = self.children
+        self.children = [child]
+
+        for old_child in old_children:
+            child.add_child(old_child)
+
+    def schedule(self):
+        """
+        Returns the stream ID of the next child to schedule.
+        """
+        # Cannot be called on active streams.
+        assert not self.active
+
+        level, child = self.child_queue.get()
+
+        if child.active:
+            next_stream = child.stream_id
+        else:
+            next_stream = child.schedule()
+
+        new_level = level + child.weight
+        self.child_queue.put((new_level, child))
+        self.last_weight = new_level
+
+        return next_stream
 
     # Custom repr
     def __repr__(self):
@@ -37,70 +82,6 @@ class Stream(object):
         return not self.__eq__(other)
 
 
-class Priorities(Mapping):
-    """
-    A set of objects that represent a current list of priorities. Can be
-    indexed by stream ID, returning a
-    :class:`Priorities <priority.priority.Priorities>` object for the streams
-    dependent on the indexed one.
-
-    :param streams: (optional) An iterable of
-        :class:`Stream <priority.priority.Stream>` objects.
-    """
-    def __init__(self, streams=None):
-        if streams is None:
-            streams = []
-
-        self._nodes = {node.stream_id: node for node in streams}
-        self._total_weight = None
-
-    @property
-    def total_weight(self):
-        """
-        The total weight of all the streams at this priority level.
-        """
-        if self._total_weight is None:
-            self._total_weight = sum(
-                node.weight for node in self._nodes.values()
-            )
-
-        return self._total_weight
-
-    def stream_weight(self, stream_id):
-        return self._nodes[stream_id].weight
-
-    # Abstract methods for Mapping
-    def __getitem__(self, key):
-        node = self._nodes[key]
-        return self.__class__(node.children)
-
-    def __iter__(self):
-        for key in self._nodes:
-            yield self[key]
-
-    def __len__(self):
-        return len(self._nodes)
-
-    def __eq__(self, other):
-        if not isinstance(other, self.__class__):
-            return False
-
-        return self._nodes == other._nodes
-
-    def __ne__(self, other):
-        return not self.__eq__(other)
-
-    # Custom repr
-    def __repr__(self):
-        stream_reprs = ', '.join(
-            repr(node) for node in self._nodes.values()
-        )
-        result = "Priorities<total_weight=%d, streams=[%s]>" % (
-            self.total_weight,
-            stream_reprs
-        )
-        return result
-
 
 class PriorityTree(object):
     """
@@ -111,17 +92,16 @@ class PriorityTree(object):
     def __init__(self):
         # This flat array keeps hold of all the streams that are logically
         # dependent on stream 0.
-        self._top_level = []
-        self._streams = {}
+        self._root_stream = Stream(stream_id=0, weight=1)
+        self._root_stream.active = False
+        self._streams = {0: self._root_stream}
 
     def _exclusive_insert(self, parent_stream, inserted_stream):
         """
         Insert ``inserted_stream`` beneath ``parent_stream``, obeying the
         semantics of exclusive insertion.
         """
-        old_children = parent_stream.children
-        parent_stream.children = [inserted_stream]
-        inserted_stream.children = old_children
+        parent_stream.add_child_exclusive(inserted_stream)
 
     def insert_stream(self,
                       stream_id,
@@ -147,96 +127,22 @@ class PriorityTree(object):
             self._exclusive_insert(parent_stream, stream)
             return
 
-        if depends_on:
-            tree_level = self._streams[depends_on].children
-        else:
-            tree_level = self._top_level
+        if not depends_on:
+            depends_on = 0
 
-        tree_level.append(stream)
+        parent = self._streams[depends_on]
+
+        parent.add_child(stream)
         self._streams[stream_id] = stream
 
-    def priorities(self, blocked=None, unblocked=None):
+    def gate(self):
         """
-        Return the prioritised streams. Only one of ``blocked`` and
-        ``unblocked`` can be used at any one time.
+        Returns an iterator that acts as a priority 'gate'.
 
-        :param blocked: An iterable of stream IDs that are blocked. All other
-            stream IDs are assumed to be unblocked.
-        :param unblocked: An iterable of stream IDs that are unblocked. All
-            toehr stream IDs are assumed to be blocked.
+        Each value popped off the iterator is the ID of the next stream that
+        should be acted on. The :class:`PriorityTree <priority.PriorityTree>`
+        that generated the gate can be manipulated at any time to add, remove,
+        block, or unblock streams
         """
-        if (blocked is None) and (unblocked is None):
-            # Fast return path for the common case.
-            return Priorities(self._top_level)
-
-        if blocked is not None and unblocked is not None:
-            raise ValueError("Must provide only one of blocked and unblocked")
-
-        if unblocked is not None:
-            unblocked = set(unblocked)
-            all_stream_ids = set(self._streams.keys())
-            blocked = all_stream_ids - unblocked
-
-        assert blocked is not None
-
-        return Priorities(self._walk(blocked))
-
-    def _walk(self, stream_filter):
-        """
-        Walk the tree, yielding the streams that are currently prioritised,
-        accounting for blocked streams.
-
-        :param stream_filter: A set of stream IDs to be filtered out.
-        :type stream_filter: `set`
-        """
-        # Let's explain the algorithm we use here.
-        #
-        # Starting with the top level of the tree, we want to build up a list
-        # of all the streams and their eventual *effective* weight. The
-        # *effective* weight of a stream is based on the relative weight of the
-        # stream and the effective weight of its parent. The relative weight of
-        # a stream is:
-        #
-        # (weight of current stream / total weight of level) * weight of parent
-        #
-        # where the 'total weight of level' is the sum of the weights of all
-        # siblings with the same parent.
-        #
-        # We build up a list of tuples of 'possible stream IDs' and their
-        # effective weights. Then, for each stream in the list, we check
-        # whether it's in the stream_filter. If it isn't, we yield it.
-        #
-        # If it *is* in the stream_filter, we grab its children and calculate
-        # their effective weights, and then place them on the list of streams
-        # to examine. When we've run out of streams to examine, that's it: we
-        # have our final list of streams and their effective weights.
-        def level_weight(streams):
-            return sum(s.weight for s in streams)
-
-        def effective_stream_weight(weight,
-                                    total_sibling_weight,
-                                    parent_weight):
-            fractional_weight = weight / total_sibling_weight
-            return fractional_weight * parent_weight
-
-        # Populate the original level.
-        possible_streams = deque((s, s.weight) for s in self._top_level)
-
-        while possible_streams:
-            stream, effective_weight = possible_streams.popleft()
-
-            if stream.stream_id in stream_filter:
-                total_weight = level_weight(stream.children)
-                possible_streams.extend(
-                    (
-                        c,
-                        effective_stream_weight(c.weight,
-                                                total_weight,
-                                                stream.weight)
-                    )
-                    for c in stream.children
-                )
-            else:
-                s = copy(stream)
-                s.weight = effective_weight
-                yield s
+        while True:
+            item = self._gate_queue.pop()
