@@ -131,18 +131,5 @@ class PriorityTree(object):
             depends_on = 0
 
         parent = self._streams[depends_on]
-
         parent.add_child(stream)
         self._streams[stream_id] = stream
-
-    def gate(self):
-        """
-        Returns an iterator that acts as a priority 'gate'.
-
-        Each value popped off the iterator is the ID of the next stream that
-        should be acted on. The :class:`PriorityTree <priority.PriorityTree>`
-        that generated the gate can be manipulated at any time to add, remove,
-        block, or unblock streams
-        """
-        while True:
-            item = self._gate_queue.pop()
