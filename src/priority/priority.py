@@ -65,7 +65,7 @@ class Stream(object):
         new_queue = queue.PriorityQueue()
 
         while not self.child_queue.empty():
-            level, stream = self.child_queue.pop()
+            level, stream = self.child_queue.get()
             if stream == child:
                 continue
 
@@ -170,6 +170,7 @@ class PriorityTree(object):
         :param exclusive: (optional) Whether this new stream should be an
             exclusive dependency of the parent.
         """
+        assert stream_id not in self._streams
         stream = Stream(stream_id, weight)
 
         if exclusive:
