@@ -67,12 +67,10 @@ class TestPriorityTreeOutput(object):
 
         # Pop off the first n elements, which will always be evenly
         # distributed.
-        print(streams_and_weights)
         for _ in weights:
-            print("    " + str(next(p)))
+            next(p)
 
         pattern = [next(p) for _ in range(period)]
-        print("    " + str(pattern))
         pattern = itertools.cycle(pattern)
 
         for i in range(period * 20):
