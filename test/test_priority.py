@@ -9,8 +9,6 @@ from __future__ import division
 
 import itertools
 
-import random
-
 from hypothesis import given
 from hypothesis.strategies import integers, lists, tuples
 
@@ -52,8 +50,6 @@ class TestPriorityTree(object):
         formula: sum(weights) / gcd(weights). Once that many values have been
         pulled out, the sequence should repeat identically.
         """
-        initial = random.getstate()
-
         p = priority.PriorityTree()
         weights = []
 
@@ -77,5 +73,4 @@ class TestPriorityTree(object):
         pattern = itertools.cycle(pattern)
 
         for i in range(period * 20):
-            assert random.getstate() == initial
             assert next(p) == next(pattern), i
