@@ -14,16 +14,6 @@ from hypothesis.strategies import integers, lists, tuples
 
 import priority
 
-try:
-    from functools import reduce
-except ImportError:
-    pass
-
-try:
-    from math import gcd
-except ImportError:
-    from fractions import gcd
-
 
 STREAMS_AND_WEIGHTS = lists(
     elements=tuples(
