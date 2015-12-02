@@ -57,10 +57,7 @@ class TestPriorityTree(object):
             p.insert_stream(stream_id=stream, weight=weight)
             weights.append(weight)
 
-        if weights:
-            period = sum(weights) // reduce(gcd, weights)
-        else:
-            period = 0
+        period = sum(weights)
 
         # Pop off the first n elements, which will always be evenly
         # distributed.
