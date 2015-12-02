@@ -42,13 +42,19 @@ class TestStream(object):
         assert repr(s) == "Stream<id=80, weight=16>"
 
 
-class TestPriorityTree(object):
+class TestPriorityTreeOutput(object):
+    """
+    These tests use Hypothesis to attempt to bound the output of iterating over
+    the priority tree. In particular, their goal is to ensure that the output
+    of the tree is "good enough": that it meets certain requirements on
+    fairness and equidistribution.
+    """
     @given(STREAMS_AND_WEIGHTS)
     def test_period_of_repetition(self, streams_and_weights):
         """
-        The period of repetition of a priority sequence is given by the
-        formula: sum(weights) / gcd(weights). Once that many values have been
-        pulled out, the sequence should repeat identically.
+        The period of repetition of a priority sequence is given by the sum of
+        the weights of the streams. Once that many values have been pulled out
+        the sequence repeats identically.
         """
         p = priority.PriorityTree()
         weights = []
