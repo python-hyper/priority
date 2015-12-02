@@ -5,6 +5,8 @@ priority/tree
 
 Implementation of the Priority tree data structure.
 """
+from __future__ import division
+
 from collections import Mapping, deque
 from copy import copy
 
