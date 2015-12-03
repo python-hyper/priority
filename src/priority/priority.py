@@ -82,6 +82,9 @@ class Stream(object):
 
         self.child_queue = new_queue
 
+        for new_child in child.children:
+            self.add_child(new_child)
+
     def schedule(self):
         """
         Returns the stream ID of the next child to schedule. Potentially
@@ -217,9 +220,9 @@ class PriorityTree(object):
         """
         Removes a stream from the priority tree.
         """
-        # TODO: At some point we should actually prune streams we no longer
-        # need. For now, just mark it permanently blocked.
-        self._streams[stream_id].active = False
+        child = self._streams.pop(stream_id)
+        parent = child.parent
+        parent.remove_child(child)
 
     def block(self, stream_id):
         """

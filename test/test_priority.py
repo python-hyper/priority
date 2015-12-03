@@ -44,7 +44,6 @@ UNBLOCKED_AND_ACTIVE = lists(
 )
 
 
-
 def readme_tree():
     """
     Provide a tree configured as the one in the readme.
@@ -113,6 +112,38 @@ class TestStream(object):
         s = priority.Stream(stream_id=80, weight=16)
         assert repr(s) == "Stream<id=80, weight=16>"
 
+    @given(STREAMS_AND_WEIGHTS)
+    def test_streams_are_well_ordered(self, streams_and_weights):
+        """
+        Streams are ordered by their stream ID.
+        """
+        stream_list = [
+            priority.Stream(stream_id=s, weight=w)
+            for s, w in streams_and_weights
+        ]
+        stream_list = sorted(stream_list)
+        streams_by_id = [stream.stream_id for stream in stream_list]
+        assert sorted(streams_by_id) == streams_by_id
+
+    @given(
+        integers(min_value=1, max_value=2**24),
+        integers(min_value=1, max_value=2**24)
+    )
+    def test_stream_ordering(self, a, b):
+        """
+        Two streams are well ordered based on their stream ID.
+        """
+        s1 = priority.Stream(stream_id=a, weight=16)
+        s2 = priority.Stream(stream_id=b, weight=32)
+
+        assert (s1 < s2) == (a < b)
+        assert (s1 <= s2) == (a <= b)
+        assert (s1 > s2) == (a > b)
+        assert (s1 >= s2) == (a >= b)
+        assert (s1 == s2) == (a == b)
+        assert (s1 != s2) == (a != b)
+
+
 
 class TestPriorityTreeManual(object):
     """
@@ -159,6 +190,24 @@ class TestPriorityTreeManual(object):
             tree.unblock(stream_id)
 
         result = [next(tree) for _ in range(len(expected))]
+        assert expected == result
+
+    @given(BLOCKED_AND_ACTIVE)
+    def test_removing_items_behaves_similarly_to_blocking(self,
+                                                          blocked_expected):
+        """
+        From the perspective of iterating over items, removing streams should
+        have the same effect as blocking them, except that the ordering
+        changes. Because the ordering is not important, don't test for it.
+        """
+        tree = readme_tree()
+        blocked = blocked_expected[0]
+        expected = set(blocked_expected[1])
+
+        for stream_id in blocked:
+            tree.remove_stream(stream_id)
+
+        result = set(next(tree) for _ in range(len(expected)))
         assert expected == result
 
     def test_priority_tree_raises_deadlock_error_if_all_blocked(self):
