@@ -16,6 +16,14 @@ except ImportError:  # Python 3:
     import queue
 
 
+class DeadlockError(Exception):
+    """
+    Raised when there are no streams that can make progress: all streams are
+    blocked.
+    """
+    pass
+
+
 class Stream(object):
     """
     Priority information for a given stream.
@@ -82,18 +90,34 @@ class Stream(object):
         # Cannot be called on active streams.
         assert not self.active
 
-        level, child = self.child_queue.get()
+        next_stream = None
+        popped_streams = []
 
-        if child.active:
-            next_stream = child.stream_id
-        else:
-            next_stream = child.schedule()
+        # Spin looking for the next active stream. Everything we pop off has
+        # to be rescheduled, even if it turns out none of them were active at
+        # this time.
+        try:
+            while next_stream is None:
+                # If the queue is empty, immediately fail.
+                val = self.child_queue.get(block=False)
+                popped_streams.append(val)
+                level, child = val
 
-        self.last_weight = level
-
-        level += (256 + child._defecit) // child.weight
-        child._defecit = (256 + child._defecit) % child.weight
-        self.child_queue.put((level, child))
+                if child.active:
+                    next_stream = child.stream_id
+                else:
+                    # Guard against the possibility that the child also has no
+                    # suitable children.
+                    try:
+                        next_stream = child.schedule()
+                    except queue.Empty:
+                        continue
+        finally:
+            for level, child in popped_streams:
+                self.last_weight = level
+                level += (256 + child._defecit) // child.weight
+                child._defecit = (256 + child._defecit) % child.weight
+                self.child_queue.put((level, child))
 
         return next_stream
 
@@ -179,6 +203,7 @@ class PriorityTree(object):
             assert depends_on is not None
             parent_stream = self._streams[depends_on]
             self._exclusive_insert(parent_stream, stream)
+            self._streams[stream_id] = stream
             return
 
         if not depends_on:
@@ -206,6 +231,7 @@ class PriorityTree(object):
         """
         Marks a given stream as unblocked, with more data to send.
         """
+        # When a stream becomes unblocked,
         self._streams[stream_id].active = True
 
     # The iterator protocol
@@ -213,7 +239,10 @@ class PriorityTree(object):
         return self
 
     def __next__(self):
-        return self._root_stream.schedule()
+        try:
+            return self._root_stream.schedule()
+        except queue.Empty:
+            raise DeadlockError("No unblocked streams to schedule.")
 
     def next(self):
         return self.__next__()

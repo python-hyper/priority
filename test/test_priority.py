@@ -10,8 +10,12 @@ from __future__ import division
 import collections
 import itertools
 
+import pytest
+
 from hypothesis import given
-from hypothesis.strategies import integers, lists, tuples
+from hypothesis.strategies import (
+    integers, lists, tuples, composite, sampled_from
+)
 
 import priority
 
@@ -22,6 +26,83 @@ STREAMS_AND_WEIGHTS = lists(
     ),
     unique_by=lambda x: x[0],
 )
+
+BLOCKED_AND_ACTIVE = lists(
+    elements=sampled_from([1, 3, 5, 7, 9, 11]),
+    unique=True,
+).map(
+    lambda blocked: (blocked, active_readme_streams_from_filter(blocked))
+)
+
+UNBLOCKED_AND_ACTIVE = lists(
+    elements=sampled_from([1, 3, 5, 7, 9, 11]),
+    unique=True,
+).map(
+    lambda unblocked: (unblocked, active_readme_streams_from_filter(
+        unblocked, blocked=False
+    ))
+)
+
+
+
+def readme_tree():
+    """
+    Provide a tree configured as the one in the readme.
+    """
+    p = priority.PriorityTree()
+    p.insert_stream(stream_id=1)
+    p.insert_stream(stream_id=3)
+    p.insert_stream(stream_id=5, depends_on=1)
+    p.insert_stream(stream_id=7, weight=32)
+    p.insert_stream(stream_id=9, depends_on=7, weight=8)
+    p.insert_stream(stream_id=11, depends_on=7, exclusive=True)
+    return p
+
+
+def active_readme_streams_from_filter(filtered, blocked=True):
+    """
+    Given a collection of filtered streams, determine which ones are active.
+    This applies only to the readme tree at this time, though in future it
+    should be possible to apply this to an arbitrary tree.
+
+    If ``blocked`` is ``True``, the filter is a set of blocked streams. If
+    ``False``, it's a collection of unblocked streams.
+    """
+    tree = {
+        1: {
+            5: {},
+        },
+        3: {},
+        7: {
+            11: {
+                9: {},
+            },
+        },
+    }
+    filtered = set(filtered)
+
+    def get_expected(tree):
+        expected = []
+
+        for stream_id in tree:
+            if stream_id not in filtered and blocked:
+                expected.append(stream_id)
+            elif stream_id in filtered and not blocked:
+                expected.append(stream_id)
+            else:
+                expected.extend(get_expected(tree[stream_id]))
+
+        return expected
+
+    return get_expected(tree)
+
+
+def active_streams_from_unblocked(unblocked):
+    """
+    Given a collection of unblocked streams, determine which ones are active.
+    This applies only to the readme tree at this time, though in future it
+    should be possible to apply this to an arbitrary tree.
+    """
 
 
 class TestStream(object):
@@ -43,14 +124,54 @@ class TestPriorityTreeManual(object):
     Hypothesis-based ones for the same data, but getting Hypothesis to generate
     useful data in this case is going to be quite tricky.
     """
-    def test_priority_tree_initially_outputs_all_stream_ids(self, readme_tree):
+    @given(BLOCKED_AND_ACTIVE)
+    def test_priority_tree_initially_outputs_all_stream_ids(self,
+                                                            blocked_expected):
         """
         The first iterations of the priority tree initially output the active
         streams, in order of stream ID, regardless of weight.
         """
-        expected = [1, 3, 7]
-        result = [next(readme_tree) for _ in range(len(expected))]
+        tree = readme_tree()
+        blocked = blocked_expected[0]
+        expected = blocked_expected[1]
+
+        for stream_id in blocked:
+            tree.block(stream_id)
+
+        result = [next(tree) for _ in range(len(expected))]
         assert expected == result
+
+    @given(UNBLOCKED_AND_ACTIVE)
+    def test_priority_tree_blocking_is_isomorphic(self,
+                                                  allowed_expected):
+        """
+        Blocking everything and then unblocking certain ones has the same
+        effect as blocking specific streams.
+        """
+        tree = readme_tree()
+        allowed = allowed_expected[0]
+        expected = allowed_expected[1]
+
+        for stream_id in range(1, 12, 2):
+            tree.block(stream_id)
+
+        for stream_id in allowed:
+            tree.unblock(stream_id)
+
+        result = [next(tree) for _ in range(len(expected))]
+        assert expected == result
+
+    def test_priority_tree_raises_deadlock_error_if_all_blocked(self):
+        """
+        Assuming all streams are blocked and none can progress, asking for the
+        one with the next highest priority fires a DeadlockError.
+        """
+        tree = readme_tree()
+        for stream_id in range(1, 12, 2):
+            tree.block(stream_id)
+
+        with pytest.raises(priority.DeadlockError):
+            next(tree)
 
 
 class TestPriorityTreeOutput(object):
