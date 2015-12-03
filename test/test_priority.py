@@ -33,6 +33,26 @@ class TestStream(object):
         assert repr(s) == "Stream<id=80, weight=16>"
 
 
+class TestPriorityTreeManual(object):
+    """
+    These tests manually confirm that the PriorityTree output is correct. They
+    use the PriorityTree given in the README and confirm that it outputs data
+    as expected.
+
+    If possible, I'd like to eventally replace these tests with
+    Hypothesis-based ones for the same data, but getting Hypothesis to generate
+    useful data in this case is going to be quite tricky.
+    """
+    def test_priority_tree_initially_outputs_all_stream_ids(self, readme_tree):
+        """
+        The first iterations of the priority tree initially output the active
+        streams, in order of stream ID, regardless of weight.
+        """
+        expected = [1, 3, 7]
+        result = [next(readme_tree) for _ in range(len(expected))]
+        assert expected == result
+
+
 class TestPriorityTreeOutput(object):
     """
     These tests use Hypothesis to attempt to bound the output of iterating over
