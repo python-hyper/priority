@@ -7,6 +7,14 @@ to express a preference for how the server allocates its (limited) resources to
 the many outstanding HTTP requests that may be running over a single HTTP/2
 connection.
 
+Specifically, this Python implementation uses a variant of the implementation
+used in the excellent `H2O`_ project. This original implementation is also the
+inspiration for `nghttp2's`_ priority implementation, and generally produces a
+very clean and even priority stream. The only notable changes from H2O's
+implementation are small modifications to allow the priority implementation to
+work cleanly as a separate implementation, rather than being embedded in a
+HTTP/2 stack directly.
+
 While priority information in HTTP/2 is only a suggestion, rather than an
 enforceable constraint, where possible servers should respect the priority
 requests of their clients.
@@ -31,99 +39,59 @@ become an exclusive dependent of another stream.
 Once streams are inserted, the stream priorities can be requested. This allows
 the server to make decisions about how to allocate resources.
 
-Querying The Tree: Manual Walk
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Iterating The Tree
+~~~~~~~~~~~~~~~~~~
 
-Priority supports a number of methods of querying the priority tree. One way is
-to manually walk the tree, starting from the level of highest priority.
+The tree in this algorithm acts as a gate. Its goal is to allow one stream
+"through" at a time, in such a manner that all the active streams are served as
+evenly as possible in proportion to their weights.
 
-.. code-block:: python
+This is handled in Priority by iterating over the tree. The tree itself is an
+iterator, and each time it is advanced it will yield a stream ID. This is the
+ID of the stream that should next send data.
 
-    >>> priorities = p.priorities()
-    >>> priorities
-    Priorities<total_weight=64, streams=[Stream<id=1, weight=16>, Stream<id=3, weight=16>, Stream<id=7, weight=32]>
-    >>> priorities.stream_weight(1)
-    16
-
-Currently, these streams are all the highest priority: they do not depend on
-another stream, and so should be served first if resources are available. Of
-these three streams, stream 7 should receive 1/2 of the resources available,
-with streams 1 and 3 receiving 1/4 of the resources available each.
-
-If for any reason a stream is blocked or cannot be served (e.g. because you
-are waiting on I/O), you can allocate the resources that were intended for that
-stream to its dependents. To do this, index into the ``Priorities`` by
-stream ID. For example, if you were unable to serve stream 7:
+This looks like this:
 
 .. code-block:: python
 
-    >>> dependents = priorities[7]
-    >>> dependents
-    Priorities<total_weight=16, streams=[Stream<id=11, weight=16>]>
-    >>> second_level_dependents = dependents[11]
-    >>> second_level_dependents
-    Priorities<total_weight=8, streams=[Stream<id=9, weight=8>]>
+    >>> for stream_id in p:
+    ...     send_data(stream_id)
 
-Here, if stream 7 could not be served, all its resources should be diverted to
-serving stream 11. If that were also unable to be served, we should instead
-divert all the resources to stream 11.
+If each stream only sends when it is 'ungated' by this mechanism, the server
+will automatically be emitting stream data in conformance to RFC 7540.
 
-Querying The Tree: Automated Resolution
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Updating The Tree
+~~~~~~~~~~~~~~~~~
 
-An alternative approach is to inform Priority of what streams are blocked (or,
-alternatively, which are unblocked), in which case Priority will return a list
-of the streams that should be satisfied, and their weights.
-
-.. code-block:: python
-
-    >>> priorities = p.priorities(blocked=[1, 5, 7])
-    >>> priorities
-    Priorities<total_weight=48, streams=[Stream<id=3, weight=16>, Stream<id=11, weight=32>]>
-    >>> p.priorities(blocked=[1, 5, 7]) == p.priorities(unblocked=[3, 9, 11])
-    True
-
-
-Querying The Tree: Gate
-~~~~~~~~~~~~~~~~~~~~~~~
-
-The Priority 'gate' is an alternative approach of accessing HTTP/2 priorities
-based on a modified version of the `approach used by nghttp2`_, which itself is
-based on the approach used in H2O. Our implementation more closely ties to the
-version used by H2O.
-
-It works by providing an iterator that acts as a 'gate'. Each value popped off
-the iterator is the next stream that should be acted on. The underlying
-``PriorityTree`` can be mutated on the fly to add, remove, block, and unblock
-streams, which affects what the next value from the iterator will be.
-
-This works well when combined with some kind of signaling mechanism to block
-and unblock threads of execution. This would allow you to do something like
-this:
-
-.. code-block:: python
-
-    >>> for stream_id in p.gate():
-    ...     unblock(stream_id)  # Sends a single DATA frame.
-
-In this circumstance, each time a stream is unblocked it should send a single
-DATA frame and then go back to waiting to be unblocked. This way we ensure that
-the data from streams is correctly multiplexed.
-
-You can also block and unblock streams in the iterator, like so:
+If for any reason a stream is unable to proceed (for example, it is blocked on
+HTTP/2 flow control, or it is waiting for more data from another service), that
+stream is *blocked*. The ``PriorityTree`` should be informed that the stream is
+blocked so that other dependent streams get a chance to proceed. This can be
+done by calling the ``block`` method of the tree with the stream ID that is
+currently unable to proceed. This will automatically update the tree, and it
+will adjust on the fly to correctly allow any streams that were dependent on
+the blocked one to progress.
 
 For example:
 
 .. code-block:: python
 
-    >>> for stream_id in p.gate()
-    ...    now_blocked = unblock(stream_id)
-    ...    if now_blocked:
-    ...        p.block(stream_id)
-    ...    unblocked = all_unblocked_streams()
-    ...    for unblocked_stream_id in unblocked:
-    ...        p.unblock(unblocked_stream_id)
+    >>> for stream_id in p:
+    ...     send_data(stream_id)
+    ...     if blocked(stream_id):
+    ...         p.block(stream_id)
 
+When a stream goes from being blocked to being unblocked, call the ``unblock``
+method to place it back into the sequence. Both the ``block`` and ``unblock``
+methods are idempotent and safe to call repeatedly.
+
+Removing Streams
+~~~~~~~~~~~~~~~~
+
+A stream can be entirely removed from the tree by calling ``remove_stream``.
+Note that this is not idempotent. Further, calling ``remove_stream`` and then
+re-adding it *may* cause a substantial change in the shape of the priority
+tree, and *will* cause the iteration order to change.
 
 License
 -------
