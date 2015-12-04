@@ -243,11 +243,11 @@ class PriorityTree(object):
     def __iter__(self):  # pragma: no cover
         return self
 
-    def __next__(self):
+    def __next__(self):  # pragma: no cover
         try:
             return self._root_stream.schedule()
         except queue.Empty:
             raise DeadlockError("No unblocked streams to schedule.")
 
-    def next(self):
+    def next(self):  # pragma: no cover
         return self.__next__()
