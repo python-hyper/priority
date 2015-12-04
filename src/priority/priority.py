@@ -263,7 +263,7 @@ class PriorityTree(object):
 
             raise PriorityLoop(
                 "Stream %d is in a priority loop." % new_parent.stream_id
-            )
+            )  # pragma: no cover
 
         current_stream = self._streams[stream_id]
 
