@@ -14,7 +14,7 @@ import pytest
 
 from hypothesis import given
 from hypothesis.strategies import (
-    integers, lists, tuples, composite, sampled_from
+    integers, lists, tuples, sampled_from
 )
 
 import priority
@@ -142,7 +142,6 @@ class TestStream(object):
         assert (s1 >= s2) == (a >= b)
         assert (s1 == s2) == (a == b)
         assert (s1 != s2) == (a != b)
-
 
 
 class TestPriorityTreeManual(object):

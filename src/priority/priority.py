@@ -7,13 +7,15 @@ Implementation of the Priority tree data structure.
 """
 from __future__ import division
 
-from collections import Mapping, deque
-from copy import copy
+import sys
 
 try:
     import Queue as queue
 except ImportError:  # Python 3:
     import queue
+
+
+PY3 = sys.version_info[0] == 3
 
 
 class DeadlockError(Exception):
@@ -130,8 +132,8 @@ class Stream(object):
 
     # Custom comparison
     def __eq__(self, other):
-        if not isinstance(other, Stream):
-            raise TypeError("Streams can only be equal to other streams")
+        if not isinstance(other, Stream):  # pragma: no cover
+            return False
 
         return self.stream_id == other.stream_id
 
@@ -139,25 +141,25 @@ class Stream(object):
         return not self.__eq__(other)
 
     def __lt__(self, other):
-        if not isinstance(other, Stream):
+        if not isinstance(other, Stream):  # pragma: no cover
             return NotImplemented
 
         return self.stream_id < other.stream_id
 
     def __le__(self, other):
-        if not isinstance(other, Stream):
+        if not isinstance(other, Stream):  # pragma: no cover
             return NotImplemented
 
         return self.stream_id <= other.stream_id
 
     def __gt__(self, other):
-        if not isinstance(other, Stream):
+        if not isinstance(other, Stream):  # pragma: no cover
             return NotImplemented
 
         return self.stream_id > other.stream_id
 
     def __ge__(self, other):
-        if not isinstance(other, Stream):
+        if not isinstance(other, Stream):  # pragma: no cover
             return NotImplemented
 
         return self.stream_id >= other.stream_id
@@ -238,7 +240,7 @@ class PriorityTree(object):
         self._streams[stream_id].active = True
 
     # The iterator protocol
-    def __iter__(self):
+    def __iter__(self):  # pragma: no cover
         return self
 
     def __next__(self):
