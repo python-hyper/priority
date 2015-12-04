@@ -85,6 +85,11 @@ When a stream goes from being blocked to being unblocked, call the ``unblock``
 method to place it back into the sequence. Both the ``block`` and ``unblock``
 methods are idempotent and safe to call repeatedly.
 
+Additionally, the priority of a stream may change. When it does, the
+``reprioritize`` method can be used to update the tree in the wake of that
+change. ``reprioritize`` has the same signature as ``insert_stream``, but
+applies only to streams already in the tree.
+
 Removing Streams
 ~~~~~~~~~~~~~~~~
 

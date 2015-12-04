@@ -221,6 +221,47 @@ class TestPriorityTreeManual(object):
         with pytest.raises(priority.DeadlockError):
             next(tree)
 
+    @pytest.mark.parametrize(
+        'stream,new_parent,exclusive,weight,blocked,result',
+        [
+            (1,  3,    False, 16, [],     [3, 7, 7, 3, 7, 7, 3, 7, 7]),
+            (1,  5,    False, 16, [],     [3, 5, 7, 7, 3, 5, 7, 7, 3]),
+            (1,  5,    False, 16, [5],    [3, 1, 7, 7, 3, 1, 7, 7, 3]),
+            (5,  7,    False, 16, [7, 1], [3, 5, 11, 3, 5, 11, 3, 5, 11]),
+            (11, None, False, 16, [],     [1, 3, 7, 11, 7, 1, 3, 7, 11]),
+            (11, None, False, 16, [11],   [1, 3, 7, 9, 7, 1, 3, 7, 9]),
+            (7,  9,    False, 16, [],     [1, 3, 9, 1, 3, 1, 3, 9, 1]),
+            (7,  1,    True,  16, [],     [1, 3, 1, 3, 1, 3, 1, 3, 1]),
+            (7,  1,    True,  16, [1],    [7, 3, 7, 3, 7, 3, 7, 3, 7]),
+            (7,  1,    True,  16, [1, 7], [5, 3, 11, 3, 5, 3, 11, 3, 5]),
+            (1,  0,    False, 32, [],     [1, 3, 7, 1, 7, 1, 3, 7, 1]),
+        ]
+    )
+    def test_can_reprioritize_a_stream(self,
+                                       stream,
+                                       new_parent,
+                                       exclusive,
+                                       weight,
+                                       blocked,
+                                       result):
+        """
+        Reprioritizing streams adjusts the outputs of the tree.
+        """
+        t = readme_tree()
+
+        for s in blocked:
+            t.block(s)
+
+        t.reprioritize(
+            stream_id=stream,
+            depends_on=new_parent,
+            weight=weight,
+            exclusive=exclusive,
+        )
+
+        actual_result = [next(t) for _ in range(len(result))]
+        assert actual_result == result
+
 
 class TestPriorityTreeOutput(object):
     """

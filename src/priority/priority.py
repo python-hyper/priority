@@ -26,6 +26,13 @@ class DeadlockError(Exception):
     pass
 
 
+class PriorityLoop(Exception):
+    """
+    An unexpected priority loop has been detected. The tree is invalid.
+    """
+    pass
+
+
 class Stream(object):
     """
     Priority information for a given stream.
@@ -61,10 +68,13 @@ class Stream(object):
         for old_child in old_children:
             child.add_child(old_child)
 
-    def remove_child(self, child):
+    def remove_child(self, child, strip_children=True):
         """
         Removes a child stream from this stream. This is a potentially somewhat
         expensive operation.
+
+        :param strip_children: Whether children of the removed stream should
+            become children of this stream.
         """
         # To do this we do the following:
         #
@@ -84,8 +94,9 @@ class Stream(object):
 
         self.child_queue = new_queue
 
-        for new_child in child.children:
-            self.add_child(new_child)
+        if strip_children:
+            for new_child in child.children:
+                self.add_child(new_child)
 
     def schedule(self):
         """
@@ -217,6 +228,75 @@ class PriorityTree(object):
         parent = self._streams[depends_on]
         parent.add_child(stream)
         self._streams[stream_id] = stream
+
+    def reprioritize(self,
+                     stream_id,
+                     depends_on=None,
+                     weight=16,
+                     exclusive=False):
+        """
+        Update the priority status of a stream already in the tree.
+
+        :param stream_id: The stream ID of the stream being updated.
+        :param depends_on: (optional) The ID of the stream that the stream now
+            depends on. If ``None``, will be moved to depend on stream 0.
+        :param weight: (optional) The new weight to give the stream. Defaults
+            to 16.
+        :param exclusive: (optional) Whether this stream should now be an
+            exclusive dependency of the new parent.
+        """
+        def stream_cycle(new_parent, current):
+            """
+            Reports whether the new parent depends on the current stream.
+            """
+            parent = new_parent
+
+            # Don't iterate forever, but instead assume that the tree doesn't
+            # get more than 100 streams deep. This should catch accidental
+            # tree loops. This is the definition of defensive programming.
+            for _ in range(100):
+                parent = parent.parent
+                if parent.stream_id == current.stream_id:
+                    return True
+                elif parent.stream_id == 0:
+                    return False
+
+            raise PriorityLoop(
+                "Stream %d is in a priority loop." % new_parent.stream_id
+            )
+
+        current_stream = self._streams[stream_id]
+
+        # Update things in a specific order to make sure the calculation
+        # behaves properly. Specifically, we first update the weight. Then,
+        # we check whether this stream is being made dependent on one of its
+        # own dependents. Then, we remove this stream from its current parent
+        # and move it to its new parent, taking its children with it.
+        if depends_on:
+            # TODO: What if we don't have the new parent?
+            new_parent = self._streams[depends_on]
+            cycle = stream_cycle(new_parent, current_stream)
+        else:
+            new_parent = self._streams[0]
+            cycle = False
+
+        current_stream.weight = weight
+
+        # Our new parent is currently dependent on us. We should remove it from
+        # its parent, and make it a child of our current parent, and then
+        # continue.
+        if cycle:
+            new_parent.parent.remove_child(new_parent)
+            current_stream.parent.add_child(new_parent)
+
+        current_stream.parent.remove_child(
+            current_stream, strip_children=False
+        )
+
+        if exclusive:
+            new_parent.add_child_exclusive(current_stream)
+        else:
+            new_parent.add_child(current_stream)
 
     def remove_stream(self, stream_id):
         """
