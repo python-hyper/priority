@@ -36,6 +36,9 @@ class PriorityLoop(Exception):
 class Stream(object):
     """
     Priority information for a given stream.
+
+    :param stream_id: The stream ID for the new stream.
+    :param weight: (optional) The stream weight. Defaults to 16.
     """
     def __init__(self, stream_id, weight=16):
         self.stream_id = stream_id
@@ -50,6 +53,8 @@ class Stream(object):
     def add_child(self, child):
         """
         Add a stream that depends on this one.
+
+        :param child: A ``Stream`` object that depends on this one.
         """
         child.parent = self
         self.children.append(child)
@@ -58,6 +63,8 @@ class Stream(object):
     def add_child_exclusive(self, child):
         """
         Add a stream that exclusively depends on this one.
+
+        :param child: A ``Stream`` object that exclusively depends on this one.
         """
         old_children = self.children
         self.children = []
@@ -73,6 +80,7 @@ class Stream(object):
         Removes a child stream from this stream. This is a potentially somewhat
         expensive operation.
 
+        :param child: The child stream to remove.
         :param strip_children: Whether children of the removed stream should
             become children of this stream.
         """
@@ -301,6 +309,8 @@ class PriorityTree(object):
     def remove_stream(self, stream_id):
         """
         Removes a stream from the priority tree.
+
+        :param stream_id: The ID of the stream to remove.
         """
         child = self._streams.pop(stream_id)
         parent = child.parent
@@ -309,12 +319,16 @@ class PriorityTree(object):
     def block(self, stream_id):
         """
         Marks a given stream as blocked, with no data to send.
+
+        :param stream_id: The ID of the stream to block.
         """
         self._streams[stream_id].active = False
 
     def unblock(self, stream_id):
         """
         Marks a given stream as unblocked, with more data to send.
+
+        :param stream_id: The ID of the stream to unblock.
         """
         # When a stream becomes unblocked,
         self._streams[stream_id].active = True
