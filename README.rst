@@ -113,4 +113,5 @@ repository.
 
 
 .. _RFC 7540 Section 5.3 (Stream Priority): https://tools.ietf.org/html/rfc7540#section-5.3
-.. _approach used by nghttp2: https://nghttp2.org/blog/2015/11/11/stream-scheduling-utilizing-http2-priority/
+.. _nghttp2's: https://nghttp2.org/blog/2015/11/11/stream-scheduling-utilizing-http2-priority/
+.. _H2O: https://h2o.examp1e.net/
