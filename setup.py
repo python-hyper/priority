@@ -4,7 +4,7 @@ from setuptools import setup, find_packages
 
 setup(
     name='priority',
-    version='0.0.1',
+    version='1.0.0',
     description='A pure-Python implementation of the HTTP/2 priority tree',
     long_description=open('README.rst').read() + '\n\n' + open('HISTORY.rst').read(),
     author='Cory Benfield',
