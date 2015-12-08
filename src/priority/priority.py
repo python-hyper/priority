@@ -48,7 +48,7 @@ class Stream(object):
         self.child_queue = queue.PriorityQueue()
         self.active = True
         self.last_weight = 0
-        self._defecit = 0
+        self._deficit = 0
 
     def add_child(self, child):
         """
@@ -139,8 +139,8 @@ class Stream(object):
         finally:
             for level, child in popped_streams:
                 self.last_weight = level
-                level += (256 + child._defecit) // child.weight
-                child._defecit = (256 + child._defecit) % child.weight
+                level += (256 + child._deficit) // child.weight
+                child._deficit = (256 + child._deficit) % child.weight
                 self.child_queue.put((level, child))
 
         return next_stream
