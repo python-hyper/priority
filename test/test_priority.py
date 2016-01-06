@@ -273,6 +273,25 @@ class TestPriorityTreeManual(object):
         with pytest.raises(priority.DuplicateStreamError):
             p.insert_stream(1)
 
+    def test_priority_raises_good_errors_for_missing_streams(self):
+        """
+        Attempting operations on absent streams raises a MissingStreamError.
+        """
+        p = priority.PriorityTree()
+        p.insert_stream(1)
+
+        with pytest.raises(priority.MissingStreamError):
+            p.reprioritize(3)
+
+        with pytest.raises(priority.MissingStreamError):
+            p.block(3)
+
+        with pytest.raises(priority.MissingStreamError):
+            p.unblock(3)
+
+        with pytest.raises(priority.MissingStreamError):
+            p.remove_stream(3)
+
 
 class TestPriorityTreeOutput(object):
     """

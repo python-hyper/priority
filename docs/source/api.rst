@@ -15,3 +15,5 @@ Exceptions
 .. autoclass:: priority.PriorityLoop
 
 .. autoclass:: priority.DuplicateStreamError
+
+.. autoclass:: priority.MissingStreamError

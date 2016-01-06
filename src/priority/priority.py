@@ -40,6 +40,13 @@ class DuplicateStreamError(Exception):
     pass
 
 
+class MissingStreamError(KeyError, Exception):
+    """
+    An operation was attempted on a stream that is not present in the tree.
+    """
+    pass
+
+
 class Stream(object):
     """
     Priority information for a given stream.
@@ -282,7 +289,10 @@ class PriorityTree(object):
                 "Stream %d is in a priority loop." % new_parent.stream_id
             )  # pragma: no cover
 
-        current_stream = self._streams[stream_id]
+        try:
+            current_stream = self._streams[stream_id]
+        except KeyError:
+            raise MissingStreamError("Stream %d not in tree" % stream_id)
 
         # Update things in a specific order to make sure the calculation
         # behaves properly. Specifically, we first update the weight. Then,
@@ -321,7 +331,11 @@ class PriorityTree(object):
 
         :param stream_id: The ID of the stream to remove.
         """
-        child = self._streams.pop(stream_id)
+        try:
+            child = self._streams.pop(stream_id)
+        except KeyError:
+            raise MissingStreamError("Stream %d not in tree" % stream_id)
+
         parent = child.parent
         parent.remove_child(child)
 
@@ -331,7 +345,10 @@ class PriorityTree(object):
 
         :param stream_id: The ID of the stream to block.
         """
-        self._streams[stream_id].active = False
+        try:
+            self._streams[stream_id].active = False
+        except KeyError:
+            raise MissingStreamError("Stream %d not in tree" % stream_id)
 
     def unblock(self, stream_id):
         """
@@ -340,7 +357,10 @@ class PriorityTree(object):
         :param stream_id: The ID of the stream to unblock.
         """
         # When a stream becomes unblocked,
-        self._streams[stream_id].active = True
+        try:
+            self._streams[stream_id].active = True
+        except KeyError:
+            raise MissingStreamError("Stream %d not in tree" % stream_id)
 
     # The iterator protocol
     def __iter__(self):  # pragma: no cover
