@@ -33,6 +33,13 @@ class PriorityLoop(Exception):
     pass
 
 
+class DuplicateStreamError(Exception):
+    """
+    An attempt was made to insert a stream that already exists.
+    """
+    pass
+
+
 class Stream(object):
     """
     Priority information for a given stream.
@@ -220,7 +227,9 @@ class PriorityTree(object):
         :param exclusive: (optional) Whether this new stream should be an
             exclusive dependency of the parent.
         """
-        assert stream_id not in self._streams
+        if stream_id in self._streams:
+            raise DuplicateStreamError("Stream %d already in tree", stream_id)
+
         stream = Stream(stream_id, weight)
 
         if exclusive:

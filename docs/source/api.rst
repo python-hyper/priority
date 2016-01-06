@@ -13,3 +13,5 @@ Exceptions
 .. autoclass:: priority.DeadlockError
 
 .. autoclass:: priority.PriorityLoop
+
+.. autoclass:: priority.DuplicateStreamError

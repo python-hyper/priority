@@ -262,6 +262,17 @@ class TestPriorityTreeManual(object):
         actual_result = [next(t) for _ in range(len(result))]
         assert actual_result == result
 
+    def test_priority_tree_raises_error_inserting_duplicate(self):
+        """
+        Attempting to insert a stream that is already in the tree raises a
+        DuplicateStreamError
+        """
+        p = priority.PriorityTree()
+        p.insert_stream(1)
+
+        with pytest.raises(priority.DuplicateStreamError):
+            p.insert_stream(1)
+
 
 class TestPriorityTreeOutput(object):
     """
