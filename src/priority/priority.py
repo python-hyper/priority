@@ -228,7 +228,7 @@ class PriorityTree(object):
             exclusive dependency of the parent.
         """
         if stream_id in self._streams:
-            raise DuplicateStreamError("Stream %d already in tree", stream_id)
+            raise DuplicateStreamError("Stream %d already in tree" % stream_id)
 
         stream = Stream(stream_id, weight)
 
