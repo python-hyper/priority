@@ -150,7 +150,7 @@ class TestPriorityTreeManual(object):
     use the PriorityTree given in the README and confirm that it outputs data
     as expected.
 
-    If possible, I'd like to eventally replace these tests with
+    If possible, I'd like to eventually replace these tests with
     Hypothesis-based ones for the same data, but getting Hypothesis to generate
     useful data in this case is going to be quite tricky.
     """
