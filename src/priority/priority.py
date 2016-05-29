@@ -7,12 +7,8 @@ Implementation of the Priority tree data structure.
 """
 from __future__ import division
 
+import heapq
 import sys
-
-try:
-    import Queue as queue
-except ImportError:  # Python 3:
-    import queue
 
 
 PY3 = sys.version_info[0] == 3
@@ -59,7 +55,7 @@ class Stream(object):
         self.weight = weight
         self.children = []
         self.parent = None
-        self.child_queue = queue.PriorityQueue()
+        self.child_queue = []
         self.active = True
         self.last_weight = 0
         self._deficit = 0
@@ -72,7 +68,7 @@ class Stream(object):
         """
         child.parent = self
         self.children.append(child)
-        self.child_queue.put((self.last_weight, child))
+        heapq.heappush(self.child_queue, (self.last_weight, child))
 
     def add_child_exclusive(self, child):
         """
@@ -82,7 +78,7 @@ class Stream(object):
         """
         old_children = self.children
         self.children = []
-        self.child_queue = queue.PriorityQueue()
+        self.child_queue = []
         self.last_weight = 0
         self.add_child(child)
 
@@ -105,14 +101,14 @@ class Stream(object):
         #   it in the old one
         self.children.remove(child)
 
-        new_queue = queue.PriorityQueue()
+        new_queue = []
 
-        while not self.child_queue.empty():
-            level, stream = self.child_queue.get()
+        while self.child_queue:
+            level, stream = heapq.heappop(self.child_queue)
             if stream == child:
                 continue
 
-            new_queue.put((level, stream))
+            heapq.heappush(new_queue, (level, stream))
 
         self.child_queue = new_queue
 
@@ -137,7 +133,7 @@ class Stream(object):
         try:
             while next_stream is None:
                 # If the queue is empty, immediately fail.
-                val = self.child_queue.get(block=False)
+                val = heapq.heappop(self.child_queue)
                 popped_streams.append(val)
                 level, child = val
 
@@ -148,14 +144,14 @@ class Stream(object):
                     # suitable children.
                     try:
                         next_stream = child.schedule()
-                    except queue.Empty:
+                    except IndexError:
                         continue
         finally:
             for level, child in popped_streams:
                 self.last_weight = level
                 level += (256 + child._deficit) // child.weight
                 child._deficit = (256 + child._deficit) % child.weight
-                self.child_queue.put((level, child))
+                heapq.heappush(self.child_queue, (level, child))
 
         return next_stream
 
@@ -369,7 +365,7 @@ class PriorityTree(object):
     def __next__(self):  # pragma: no cover
         try:
             return self._root_stream.schedule()
-        except queue.Empty:
+        except IndexError:
             raise DeadlockError("No unblocked streams to schedule.")
 
     def next(self):  # pragma: no cover
