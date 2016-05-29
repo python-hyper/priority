@@ -1,6 +1,7 @@
 .PHONY: publish
 
 publish:
-	python setup.py sdist upload
-	python setup.py bdist_wheel upload
+	rm -rf dist/*
+	python setup.py sdist bdist_wheel
+	twine upload -s dist/*
 
