@@ -292,6 +292,21 @@ class TestPriorityTreeManual(object):
         with pytest.raises(priority.MissingStreamError):
             p.remove_stream(3)
 
+    @pytest.mark.parametrize('count', range(2, 10000, 100))
+    def test_priority_refuses_to_allow_too_many_streams_in_tree(self, count):
+        """
+        Attempting to insert more streams than maximum_streams into the tree
+        fails.
+        """
+        p = priority.PriorityTree(maximum_streams=count)
+
+        # This isn't an off-by-one error: stream 0 is in the tree by default.
+        for x in range(1, count):
+            p.insert_stream(x)
+
+        with pytest.raises(priority.TooManyStreamsError):
+            p.insert_stream(x + 1)
+
 
 class TestPriorityTreeOutput(object):
     """
