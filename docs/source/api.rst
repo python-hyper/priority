@@ -17,3 +17,5 @@ Exceptions
 .. autoclass:: priority.DuplicateStreamError
 
 .. autoclass:: priority.MissingStreamError
+
+.. autoclass:: priority.TooManyStreamsError

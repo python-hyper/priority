@@ -43,6 +43,16 @@ class MissingStreamError(KeyError, Exception):
     pass
 
 
+class TooManyStreamsError(Exception):
+    """
+    An attempt was made to insert a dangerous number of streams into the
+    priority tree at the same time.
+
+    .. versionadded:: 1.2.0
+    """
+    pass
+
+
 class Stream(object):
     """
     Priority information for a given stream.
@@ -199,13 +209,33 @@ class PriorityTree(object):
     A HTTP/2 Priority Tree.
 
     This tree stores HTTP/2 streams according to their HTTP/2 priorities.
+
+    .. versionchanged:: 1.2.0
+       Added ``maximum_streams`` keyword argument.
+
+    :param maximum_streams: The maximum number of streams that may be active in
+        the priority tree at any one time. If this number is exceeded, the
+        priority tree will raise a :class:`TooManyStreamsError
+        <priority.TooManyStreamsError>` and will refuse to insert the stream.
+
+        This parameter exists to defend against the possibility of DoS attack
+        by attempting to overfill the priority tree. If any endpoint is
+        attempting to manage the priority of this many streams at once it is
+        probably trying to screw with you, so it is sensible to simply refuse
+        to play ball at that point.
+
+        While we allow the user to configure this, we don't really *expect*
+        them too, unless they want to be even more conservative than we are by
+        default.
+    :type maximum_streams: ``int``
     """
-    def __init__(self):
+    def __init__(self, maximum_streams=1000):
         # This flat array keeps hold of all the streams that are logically
         # dependent on stream 0.
         self._root_stream = Stream(stream_id=0, weight=1)
         self._root_stream.active = False
         self._streams = {0: self._root_stream}
+        self._maximum_streams = maximum_streams
 
     def _exclusive_insert(self, parent_stream, inserted_stream):
         """
@@ -232,6 +262,13 @@ class PriorityTree(object):
         """
         if stream_id in self._streams:
             raise DuplicateStreamError("Stream %d already in tree" % stream_id)
+
+        if (len(self._streams) + 1) > self._maximum_streams:
+            raise TooManyStreamsError(
+                "Refusing to insert %d streams into priority tree at once" % (
+                    self._maximum_streams + 1
+                )
+            )
 
         stream = Stream(stream_id, weight)
 

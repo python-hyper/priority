@@ -23,6 +23,7 @@ Contents:
    installation
    using-priority
    api
+   security/index
    license
    authors
 
