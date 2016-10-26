@@ -1,6 +1,14 @@
 Changelog
 =========
 
+1.2.1dev0
+---------
+
+**Bugfixes**
+
+- Allow insertion of streams that have parents in the idle or closed states.
+  This would previously raise a KeyError.
+
 1.2.0 (2016-08-04)
 ------------------
 
