@@ -292,6 +292,70 @@ class TestPriorityTreeManual(object):
         with pytest.raises(priority.MissingStreamError):
             p.remove_stream(3)
 
+    @pytest.mark.parametrize('exclusive', [True, False])
+    def test_priority_allows_inserting_stream_with_absent_parent(self,
+                                                                 exclusive):
+        """
+        Attemping to insert a stream that depends on a stream that is not in
+        the tree automatically inserts the parent with default priority.
+        """
+        p = priority.PriorityTree()
+        p.insert_stream(
+            stream_id=3, depends_on=1, exclusive=exclusive, weight=32
+        )
+
+        # Iterate 10 times to prove that the parent stream starts blocked.
+        first_ten_ids = [next(p) for _ in range(0, 10)]
+        assert first_ten_ids == [3] * 10
+
+        # Unblock the parent.
+        p.unblock(1)
+
+        # Iterate 10 times, expecting only the parent.
+        next_ten_ids = [next(p) for _ in range(0, 10)]
+        assert next_ten_ids == [1] * 10
+
+        # Insert a new stream into the tree with default priority.
+        p.insert_stream(stream_id=5)
+
+        # Iterate 10 more times. Expect the parent, and the new stream, in
+        # equal amounts.
+        next_ten_ids = [next(p) for _ in range(0, 10)]
+        assert next_ten_ids == [5, 1] * 5
+
+    @pytest.mark.parametrize('exclusive', [True, False])
+    def test_priority_reprioritizing_stream_with_absent_parent(self,
+                                                               exclusive):
+        """
+        Attemping to reprioritize a stream to depend on a stream that is not in
+        the tree automatically inserts the parent with default priority.
+        """
+        p = priority.PriorityTree()
+        p.insert_stream(stream_id=3)
+
+        p.reprioritize(
+            stream_id=3, depends_on=1, exclusive=exclusive, weight=32
+        )
+
+        # Iterate 10 times to prove that the parent stream starts blocked.
+        first_ten_ids = [next(p) for _ in range(0, 10)]
+        assert first_ten_ids == [3] * 10
+
+        # Unblock the parent.
+        p.unblock(1)
+
+        # Iterate 10 times, expecting only the parent.
+        next_ten_ids = [next(p) for _ in range(0, 10)]
+        assert next_ten_ids == [1] * 10
+
+        # Insert a new stream into the tree with default priority.
+        p.insert_stream(stream_id=5)
+
+        # Iterate 10 more times. Expect the parent, and the new stream, in
+        # equal amounts.
+        next_ten_ids = [next(p) for _ in range(0, 10)]
+        assert next_ten_ids == [5, 1] * 5
+
     @pytest.mark.parametrize('count', range(2, 10000, 100))
     def test_priority_refuses_to_allow_too_many_streams_in_tree(self, count):
         """
