@@ -237,6 +237,20 @@ class PriorityTree(object):
         self._streams = {0: self._root_stream}
         self._maximum_streams = maximum_streams
 
+    def _get_or_insert_parent(self, parent_stream_id):
+        """
+        When inserting or reprioritizing a stream it is possible to make it
+        dependent on a stream that is no longer in the tree. In this situation,
+        rather than bail out, we should insert the parent stream into the tree
+        with default priority and mark it as blocked.
+        """
+        try:
+            return self._streams[parent_stream_id]
+        except KeyError:
+            self.insert_stream(parent_stream_id)
+            self.block(parent_stream_id)
+            return self._streams[parent_stream_id]
+
     def _exclusive_insert(self, parent_stream, inserted_stream):
         """
         Insert ``inserted_stream`` beneath ``parent_stream``, obeying the
@@ -274,7 +288,7 @@ class PriorityTree(object):
 
         if exclusive:
             assert depends_on is not None
-            parent_stream = self._streams[depends_on]
+            parent_stream = self._get_or_insert_parent(depends_on)
             self._exclusive_insert(parent_stream, stream)
             self._streams[stream_id] = stream
             return
@@ -282,7 +296,7 @@ class PriorityTree(object):
         if not depends_on:
             depends_on = 0
 
-        parent = self._streams[depends_on]
+        parent = self._get_or_insert_parent(depends_on)
         parent.add_child(stream)
         self._streams[stream_id] = stream
 
@@ -333,8 +347,7 @@ class PriorityTree(object):
         # own dependents. Then, we remove this stream from its current parent
         # and move it to its new parent, taking its children with it.
         if depends_on:
-            # TODO: What if we don't have the new parent?
-            new_parent = self._streams[depends_on]
+            new_parent = self._get_or_insert_parent(depends_on)
             cycle = stream_cycle(new_parent, current_stream)
         else:
             new_parent = self._streams[0]
