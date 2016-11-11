@@ -235,6 +235,10 @@ class TestPriorityTreeManual(object):
             (7,  1,    True,  16, [1],    [7, 3, 7, 3, 7, 3, 7, 3, 7]),
             (7,  1,    True,  16, [1, 7], [5, 3, 11, 3, 5, 3, 11, 3, 5]),
             (1,  0,    False, 32, [],     [1, 3, 7, 1, 7, 1, 3, 7, 1]),
+            (1,  0,    True,  32, [],     [1, 1, 1, 1, 1, 1, 1, 1, 1]),
+            (1,  0,    True,  32, [1],    [3, 5, 7, 7, 3, 5, 7, 7, 3]),
+            (1,  None, True,  32, [],     [1, 1, 1, 1, 1, 1, 1, 1, 1]),
+            (1,  None, True,  32, [1],    [3, 5, 7, 7, 3, 5, 7, 7, 3]),
         ]
     )
     def test_can_reprioritize_a_stream(self,
@@ -370,6 +374,22 @@ class TestPriorityTreeManual(object):
 
         with pytest.raises(priority.TooManyStreamsError):
             p.insert_stream(x + 1)
+
+    @pytest.mark.parametrize('depends_on', [0, None])
+    def test_can_insert_stream_with_exclusive_dependency_on_0(self,
+                                                              depends_on):
+        """
+        It is acceptable to insert a stream with an exclusive dependency on
+        stream 0, both explicitly and implicitly.
+        """
+        p = priority.PriorityTree()
+        p.insert_stream(stream_id=1)
+        p.insert_stream(stream_id=3)
+
+        p.insert_stream(stream_id=5, depends_on=depends_on, exclusive=True)
+
+        next_ten_ids = [next(p) for _ in range(0, 10)]
+        assert next_ten_ids == [5] * 10
 
 
 class TestPriorityTreeOutput(object):
