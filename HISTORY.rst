@@ -1,6 +1,14 @@
 Changelog
 =========
 
+dev
+---
+
+**Bugfixes**
+
+- Allow ``insert_stream`` to be called with ``exclusive=True`` but no explicit
+  ``depends_on`` value.
+
 1.2.1 (2016-10-26)
 ------------------
 
