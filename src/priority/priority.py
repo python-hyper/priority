@@ -286,15 +286,14 @@ class PriorityTree(object):
 
         stream = Stream(stream_id, weight)
 
+        if not depends_on:
+            depends_on = 0
+
         if exclusive:
-            assert depends_on is not None
             parent_stream = self._get_or_insert_parent(depends_on)
             self._exclusive_insert(parent_stream, stream)
             self._streams[stream_id] = stream
             return
-
-        if not depends_on:
-            depends_on = 0
 
         parent = self._get_or_insert_parent(depends_on)
         parent.add_child(stream)
