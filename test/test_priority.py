@@ -296,6 +296,19 @@ class TestPriorityTreeManual(object):
         with pytest.raises(priority.MissingStreamError):
             p.remove_stream(3)
 
+    def test_priority_raises_good_errors_for_zero_stream(self):
+        """
+        Attempting operations on stream 0 raises a PseudoStreamError.
+        """
+        p = priority.PriorityTree()
+        p.insert_stream(1)
+
+        with pytest.raises(priority.PseudoStreamError):
+            p.reprioritize(0)
+
+        with pytest.raises(priority.PseudoStreamError):
+            p.remove_stream(0)
+
     @pytest.mark.parametrize('exclusive', [True, False])
     def test_priority_allows_inserting_stream_with_absent_parent(self,
                                                                  exclusive):

@@ -62,6 +62,15 @@ class BadWeightError(Exception):
     pass
 
 
+class PseudoStreamError(Exception):
+    """
+    An operation was attempted on stream 0.
+
+    .. versionadded:: 1.3.0
+    """
+    pass
+
+
 class Stream(object):
     """
     Priority information for a given stream.
@@ -339,6 +348,9 @@ class PriorityTree(object):
         :param exclusive: (optional) Whether this stream should now be an
             exclusive dependency of the new parent.
         """
+        if stream_id == 0:
+            raise PseudoStreamError("Cannot reprioritize stream 0")
+
         def stream_cycle(new_parent, current):
             """
             Reports whether the new parent depends on the current stream.
@@ -400,6 +412,9 @@ class PriorityTree(object):
 
         :param stream_id: The ID of the stream to remove.
         """
+        if stream_id == 0:
+            raise PseudoStreamError("Cannot remove stream 0")
+
         try:
             child = self._streams.pop(stream_id)
         except KeyError:
@@ -425,7 +440,6 @@ class PriorityTree(object):
 
         :param stream_id: The ID of the stream to unblock.
         """
-        # When a stream becomes unblocked,
         try:
             self._streams[stream_id].active = True
         except KeyError:
