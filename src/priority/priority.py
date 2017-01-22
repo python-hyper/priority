@@ -53,6 +53,15 @@ class TooManyStreamsError(Exception):
     pass
 
 
+class BadWeightError(Exception):
+    """
+    An attempt was made to create a stream with an invalid weight.
+
+    .. versionadded:: 1.3.0
+    """
+    pass
+
+
 class Stream(object):
     """
     Priority information for a given stream.
@@ -69,6 +78,21 @@ class Stream(object):
         self.active = True
         self.last_weight = 0
         self._deficit = 0
+
+    @property
+    def weight(self):
+        return self._weight
+
+    @weight.setter
+    def weight(self, value):
+        # RFC 7540 § 5.3.2: "All dependent streams are allocated an integer
+        # weight between 1 and 256 (inclusive)."
+        if not isinstance(value, int):
+            raise BadWeightError("Stream weight should be an integer")
+        elif not (1 <= value <= 256):
+            raise BadWeightError(
+                "Stream weight must be between 1 and 256 (inclusive)")
+        self._weight = value
 
     def add_child(self, child):
         """

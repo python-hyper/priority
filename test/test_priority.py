@@ -391,6 +391,51 @@ class TestPriorityTreeManual(object):
         next_ten_ids = [next(p) for _ in range(0, 10)]
         assert next_ten_ids == [5] * 10
 
+    @pytest.mark.parametrize('weight', [
+        None,
+        0.5,
+        float('inf'),
+        'priority',
+        object
+    ])
+    def test_stream_with_non_integer_weight_is_error(self, weight):
+        """
+        Giving a stream a non-integer weight is rejected.
+        """
+        p = priority.PriorityTree()
+        with pytest.raises(priority.BadWeightError) as err:
+            p.insert_stream(stream_id=1, weight=weight)
+        assert err.value.args[0] == 'Stream weight should be an integer'
+
+        p.insert_stream(stream_id=2)
+        with pytest.raises(priority.BadWeightError) as err:
+            p.reprioritize(stream_id=2, weight=weight)
+        assert err.value.args[0] == 'Stream weight should be an integer'
+
+    @pytest.mark.parametrize('weight', [
+        0,
+        257,
+        1000,
+        -42,
+    ])
+    def test_stream_with_out_of_bounds_weight_is_error(self, weight):
+        """
+        Giving a stream an out-of-bounds integer weight is rejected.
+        """
+        p = priority.PriorityTree()
+        with pytest.raises(priority.BadWeightError) as err:
+            p.insert_stream(stream_id=1, weight=weight)
+        assert (
+            err.value.args[0] ==
+            'Stream weight must be between 1 and 256 (inclusive)')
+
+        p.insert_stream(stream_id=2)
+        with pytest.raises(priority.BadWeightError) as err:
+            p.reprioritize(stream_id=2, weight=weight)
+        assert (
+            err.value.args[0] ==
+            'Stream weight must be between 1 and 256 (inclusive)')
+
 
 class TestPriorityTreeOutput(object):
     """
