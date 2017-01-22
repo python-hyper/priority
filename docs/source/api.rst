@@ -10,6 +10,8 @@ Priority Tree
 Exceptions
 ----------
 
+.. autoclass:: priority.PriorityError
+
 .. autoclass:: priority.DeadlockError
 
 .. autoclass:: priority.PriorityLoop
@@ -19,3 +21,7 @@ Exceptions
 .. autoclass:: priority.MissingStreamError
 
 .. autoclass:: priority.TooManyStreamsError
+
+.. autoclass:: priority.BadWeightError
+
+.. autoclass:: priority.PseudoStreamError
