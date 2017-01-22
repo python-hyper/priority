@@ -307,6 +307,12 @@ class TestPriorityTreeManual(object):
             p.reprioritize(0)
 
         with pytest.raises(priority.PseudoStreamError):
+            p.block(0)
+
+        with pytest.raises(priority.PseudoStreamError):
+            p.unblock(0)
+
+        with pytest.raises(priority.PseudoStreamError):
             p.remove_stream(0)
 
     @pytest.mark.parametrize('exclusive', [True, False])

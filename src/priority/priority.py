@@ -429,6 +429,9 @@ class PriorityTree(object):
 
         :param stream_id: The ID of the stream to block.
         """
+        if stream_id == 0:
+            raise PseudoStreamError("Cannot block stream 0")
+
         try:
             self._streams[stream_id].active = False
         except KeyError:
@@ -440,6 +443,9 @@ class PriorityTree(object):
 
         :param stream_id: The ID of the stream to unblock.
         """
+        if stream_id == 0:
+            raise PseudoStreamError("Cannot unblock stream 0")
+
         try:
             self._streams[stream_id].active = True
         except KeyError:
