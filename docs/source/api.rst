@@ -19,3 +19,7 @@ Exceptions
 .. autoclass:: priority.MissingStreamError
 
 .. autoclass:: priority.TooManyStreamsError
+
+.. autoclass:: priority.BadWeightError
+
+.. autoclass:: priority.PseudoStreamError

@@ -14,7 +14,13 @@ import sys
 PY3 = sys.version_info[0] == 3
 
 
-class DeadlockError(Exception):
+class PriorityError(Exception):
+    """
+    The base class for all ``priority`` exceptions.
+    """
+
+
+class DeadlockError(PriorityError):
     """
     Raised when there are no streams that can make progress: all streams are
     blocked.
@@ -22,28 +28,28 @@ class DeadlockError(Exception):
     pass
 
 
-class PriorityLoop(Exception):
+class PriorityLoop(PriorityError):
     """
     An unexpected priority loop has been detected. The tree is invalid.
     """
     pass
 
 
-class DuplicateStreamError(Exception):
+class DuplicateStreamError(PriorityError):
     """
     An attempt was made to insert a stream that already exists.
     """
     pass
 
 
-class MissingStreamError(KeyError, Exception):
+class MissingStreamError(KeyError, PriorityError):
     """
     An operation was attempted on a stream that is not present in the tree.
     """
     pass
 
 
-class TooManyStreamsError(Exception):
+class TooManyStreamsError(PriorityError):
     """
     An attempt was made to insert a dangerous number of streams into the
     priority tree at the same time.
@@ -53,7 +59,7 @@ class TooManyStreamsError(Exception):
     pass
 
 
-class BadWeightError(Exception):
+class BadWeightError(PriorityError):
     """
     An attempt was made to create a stream with an invalid weight.
 
@@ -62,7 +68,7 @@ class BadWeightError(Exception):
     pass
 
 
-class PseudoStreamError(Exception):
+class PseudoStreamError(PriorityError):
     """
     An operation was attempted on stream 0.
 
@@ -237,6 +243,27 @@ class Stream(object):
         return self.stream_id >= other.stream_id
 
 
+def _stream_cycle(new_parent, current):
+    """
+    Reports whether the new parent depends on the current stream.
+    """
+    parent = new_parent
+
+    # Don't iterate forever, but instead assume that the tree doesn't
+    # get more than 100 streams deep. This should catch accidental
+    # tree loops. This is the definition of defensive programming.
+    for _ in range(100):
+        parent = parent.parent
+        if parent.stream_id == current.stream_id:
+            return True
+        elif parent.stream_id == 0:
+            return False
+
+    raise PriorityLoop(
+        "Stream %d is in a priority loop." % new_parent.stream_id
+    )  # pragma: no cover
+
+
 class PriorityTree(object):
     """
     A HTTP/2 Priority Tree.
@@ -332,26 +359,6 @@ class PriorityTree(object):
         parent.add_child(stream)
         self._streams[stream_id] = stream
 
-    def _stream_cycle(self, new_parent, current):
-        """
-        Reports whether the new parent depends on the current stream.
-        """
-        parent = new_parent
-
-        # Don't iterate forever, but instead assume that the tree doesn't
-        # get more than 100 streams deep. This should catch accidental
-        # tree loops. This is the definition of defensive programming.
-        for _ in range(100):
-            parent = parent.parent
-            if parent.stream_id == current.stream_id:
-                return True
-            elif parent.stream_id == 0:
-                return False
-
-        raise PriorityLoop(
-            "Stream %d is in a priority loop." % new_parent.stream_id
-        )  # pragma: no cover
-
     def reprioritize(self,
                      stream_id,
                      depends_on=None,
@@ -383,7 +390,7 @@ class PriorityTree(object):
         # and move it to its new parent, taking its children with it.
         if depends_on:
             new_parent = self._get_or_insert_parent(depends_on)
-            cycle = self._stream_cycle(new_parent, current_stream)
+            cycle = _stream_cycle(new_parent, current_stream)
         else:
             new_parent = self._streams[0]
             cycle = False
