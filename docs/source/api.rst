@@ -10,6 +10,8 @@ Priority Tree
 Exceptions
 ----------
 
+.. autoclass:: priority.PriorityError
+
 .. autoclass:: priority.DeadlockError
 
 .. autoclass:: priority.PriorityLoop

@@ -10,6 +10,8 @@ Changelog
   weight that is not an integer between 1 and 256, inclusive.
 - Throw ``PseudoStreamError`` when trying to reprioritise, remove, block or
   unblock stream 0.
+- Add a new ``PriorityError`` parent class for the exceptions that can be
+  thrown by priority.
 
 1.2.2 (2016-11-11)
 ------------------
