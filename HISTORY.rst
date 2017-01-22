@@ -8,7 +8,7 @@ Changelog
 
 - Throw ``BadWeightError`` when creating or reprioritising a stream with a
   weight that is not an integer between 1 and 256, inclusive.
-- Throw ``PseudoStreamError`` when trying to reprioritize, remove, block or
+- Throw ``PseudoStreamError`` when trying to reprioritise, remove, block or
   unblock stream 0.
 
 1.2.2 (2016-11-11)
