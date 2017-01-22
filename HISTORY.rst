@@ -6,8 +6,8 @@ Changelog
 
 **API Changes**
 
-- Throw ``BadWeightError`` when inserting a stream with a weight that is not
-  an integer between 1 and 256, inclusive.
+- Throw ``BadWeightError`` when creating or repriotizing a stream with a weight
+  that is not an integer between 1 and 256, inclusive.
 
 1.2.2 (2016-11-11)
 ------------------
