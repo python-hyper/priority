@@ -332,6 +332,26 @@ class PriorityTree(object):
         parent.add_child(stream)
         self._streams[stream_id] = stream
 
+    def _stream_cycle(self, new_parent, current):
+        """
+        Reports whether the new parent depends on the current stream.
+        """
+        parent = new_parent
+
+        # Don't iterate forever, but instead assume that the tree doesn't
+        # get more than 100 streams deep. This should catch accidental
+        # tree loops. This is the definition of defensive programming.
+        for _ in range(100):
+            parent = parent.parent
+            if parent.stream_id == current.stream_id:
+                return True
+            elif parent.stream_id == 0:
+                return False
+
+        raise PriorityLoop(
+            "Stream %d is in a priority loop." % new_parent.stream_id
+        )  # pragma: no cover
+
     def reprioritize(self,
                      stream_id,
                      depends_on=None,
@@ -351,26 +371,6 @@ class PriorityTree(object):
         if stream_id == 0:
             raise PseudoStreamError("Cannot reprioritize stream 0")
 
-        def stream_cycle(new_parent, current):
-            """
-            Reports whether the new parent depends on the current stream.
-            """
-            parent = new_parent
-
-            # Don't iterate forever, but instead assume that the tree doesn't
-            # get more than 100 streams deep. This should catch accidental
-            # tree loops. This is the definition of defensive programming.
-            for _ in range(100):
-                parent = parent.parent
-                if parent.stream_id == current.stream_id:
-                    return True
-                elif parent.stream_id == 0:
-                    return False
-
-            raise PriorityLoop(
-                "Stream %d is in a priority loop." % new_parent.stream_id
-            )  # pragma: no cover
-
         try:
             current_stream = self._streams[stream_id]
         except KeyError:
@@ -383,7 +383,7 @@ class PriorityTree(object):
         # and move it to its new parent, taking its children with it.
         if depends_on:
             new_parent = self._get_or_insert_parent(depends_on)
-            cycle = stream_cycle(new_parent, current_stream)
+            cycle = self._stream_cycle(new_parent, current_stream)
         else:
             new_parent = self._streams[0]
             cycle = False
