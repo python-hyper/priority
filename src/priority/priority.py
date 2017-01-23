@@ -348,6 +348,10 @@ class PriorityTree(object):
 
         if not depends_on:
             depends_on = 0
+        elif depends_on == stream_id:
+            raise PriorityLoop(
+                "Stream %d must not depend on itself." % stream_id
+            )
 
         if exclusive:
             parent_stream = self._get_or_insert_parent(depends_on)
@@ -389,6 +393,11 @@ class PriorityTree(object):
         # own dependents. Then, we remove this stream from its current parent
         # and move it to its new parent, taking its children with it.
         if depends_on:
+            if depends_on == stream_id:
+                raise PriorityLoop(
+                    "Stream %d must not depend on itself" % stream_id
+                )
+
             new_parent = self._get_or_insert_parent(depends_on)
             cycle = _stream_cycle(new_parent, current_stream)
         else:

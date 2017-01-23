@@ -6,6 +6,8 @@ Changelog
 
 **API Changes**
 
+- Throw ``PriorityLoop`` when inserting or reprioritising a stream that
+  depends on itself.
 - Throw ``BadWeightError`` when creating or reprioritising a stream with a
   weight that is not an integer between 1 and 256, inclusive.
 - Throw ``PseudoStreamError`` when trying to reprioritise, remove, block or
