@@ -455,6 +455,31 @@ class TestPriorityTreeManual(object):
             err.value.args[0] ==
             'Stream weight must be between 1 and 256 (inclusive)')
 
+    @pytest.mark.parametrize('exclusive', (True, False))
+    @pytest.mark.parametrize('stream_id', (1, 5, 20, 32, 256))
+    def test_stream_depending_on_self_is_error(self, stream_id, exclusive):
+        """
+        Inserting a stream that is dependent on itself is rejected.
+        """
+        p = priority.PriorityTree()
+        with pytest.raises(priority.PriorityLoop):
+            p.insert_stream(
+                stream_id=stream_id, depends_on=stream_id, exclusive=exclusive
+            )
+
+    @pytest.mark.parametrize('exclusive', (True, False))
+    @pytest.mark.parametrize('stream_id', (1, 5, 20, 32, 256))
+    def test_reprioritize_depend_on_self_is_error(self, stream_id, exclusive):
+        """
+        Reprioritizing a stream to make it dependent on itself is an error.
+        """
+        p = priority.PriorityTree()
+        p.insert_stream(stream_id=stream_id)
+        with pytest.raises(priority.PriorityLoop):
+            p.reprioritize(
+                stream_id=stream_id, depends_on=stream_id, exclusive=exclusive
+            )
+
 
 class TestPriorityTreeOutput(object):
     """
