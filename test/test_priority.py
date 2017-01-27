@@ -496,7 +496,7 @@ class TestPriorityTreeManual(object):
         Creating a PriorityTree with a non-positive integer for maximum_streams
         is an error.
         """
-        with pytest.raises(TypeError) as err:
+        with pytest.raises(ValueError) as err:
             priority.PriorityTree(maximum_streams=maximum_streams)
         assert (
             err.value.args[0] == "maximum_streams must be a positive integer.")

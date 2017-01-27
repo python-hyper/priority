@@ -299,7 +299,7 @@ class PriorityTree(object):
         if not isinstance(maximum_streams, int):
             raise TypeError("maximum_streams must be an int.")
         if maximum_streams <= 0:
-            raise TypeError("maximum_streams must be a positive integer.")
+            raise ValueError("maximum_streams must be a positive integer.")
         self._maximum_streams = maximum_streams
 
     def _get_or_insert_parent(self, parent_stream_id):
