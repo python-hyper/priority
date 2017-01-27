@@ -7,6 +7,8 @@ Changelog
 **API Changes**
 
 - Throw ``TypeError`` when creating a priority tree with a ``maximum_streams``
+  value that is not an integer.
+- Throw ``ValueError`` when creating a priority tree with a ``maximum_streams``
   value that is not a positive integer.
 
 1.3.0 (2017-01-27)
