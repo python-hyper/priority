@@ -480,6 +480,27 @@ class TestPriorityTreeManual(object):
                 stream_id=stream_id, depends_on=stream_id, exclusive=exclusive
             )
 
+    @pytest.mark.parametrize('maximum_streams', (None, 'foo', object(), 2.0))
+    def test_maximum_streams_with_non_int_is_error(self, maximum_streams):
+        """
+        Creating a PriorityTree with a non-int argument for maximum_streams
+        is an error.
+        """
+        with pytest.raises(TypeError) as err:
+            priority.PriorityTree(maximum_streams=maximum_streams)
+        assert err.value.args[0] == "maximum_streams must be an int."
+
+    @pytest.mark.parametrize('maximum_streams', (0, -1, -50))
+    def test_maximum_streams_with_bad_int_is_error(self, maximum_streams):
+        """
+        Creating a PriorityTree with a non-positive integer for maximum_streams
+        is an error.
+        """
+        with pytest.raises(ValueError) as err:
+            priority.PriorityTree(maximum_streams=maximum_streams)
+        assert (
+            err.value.args[0] == "maximum_streams must be a positive integer.")
+
 
 class TestPriorityTreeOutput(object):
     """
