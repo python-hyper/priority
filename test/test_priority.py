@@ -13,6 +13,7 @@ import itertools
 import pytest
 
 from hypothesis import given
+from hypothesis.stateful import invariant, RuleBasedStateMachine, rule
 from hypothesis.strategies import (
     integers, lists, tuples, sampled_from
 )
@@ -561,3 +562,79 @@ class TestPriorityTreeOutput(object):
         assert len(count) == len(streams_and_weights)
         for stream, weight in streams_and_weights:
             count[stream] == weight
+
+
+class PriorityStateMachine(RuleBasedStateMachine):
+    """
+    This test uses Hypothesis's stateful testing to exercise the priority tree.
+
+    It randomly inserts, removes, blocks and unblocks streams in the tree,
+    then checks that iterating over priority still selects a sensible stream.
+    """
+
+    def __init__(self):
+        super(PriorityStateMachine, self).__init__()
+        self.tree = priority.PriorityTree()
+        self.stream_ids = set([0])
+        self.blocked_stream_ids = set()
+
+    @rule(stream_id=integers())
+    def insert_stream(self, stream_id):
+        try:
+            self.tree.insert_stream(stream_id)
+        except priority.DuplicateStreamError:
+            assert stream_id in self.stream_ids
+        else:
+            assert stream_id not in self.stream_ids
+            self.stream_ids.add(stream_id)
+
+    def _run_action(self, action, stream_id):
+        try:
+            action(stream_id)
+        except priority.MissingStreamError:
+            assert stream_id not in self.stream_ids
+        except priority.PseudoStreamError:
+            assert stream_id == 0
+        else:
+            assert stream_id in self.stream_ids
+
+    @rule(stream_id=integers())
+    def remove_stream(self, stream_id):
+        self._run_action(self.tree.remove_stream, stream_id)
+        if stream_id != 0:
+            self.stream_ids.discard(stream_id)
+
+    @rule(stream_id=integers())
+    def block_stream(self, stream_id):
+        self._run_action(self.tree.block, stream_id)
+        if (stream_id != 0) and (stream_id in self.stream_ids):
+            self.blocked_stream_ids.add(stream_id)
+
+    @rule(stream_id=integers())
+    def unblock_stream(self, stream_id):
+        self._run_action(self.tree.unblock, stream_id)
+        self.blocked_stream_ids.discard(stream_id)
+
+    @invariant()
+    def check_next_stream_consistent(self):
+        """
+        If we ask priority for the next stream, it always returns a sensible
+        result.
+        """
+        try:
+            next_stream_id = next(self.tree)
+        except priority.DeadlockError:
+            assert self.blocked_stream_ids ^ {0} == self.stream_ids
+        else:
+            stream = self.tree._streams[next_stream_id]
+
+            # If a stream is selected, then it isn't blocked
+            assert stream.active
+
+            # If a stream is selected, then its parent is either the root
+            # stream or blocked
+            parent = stream.parent
+            assert (parent.stream_id == 0) or (not parent.active)
+
+
+TestPriorityTreeStateful = PriorityStateMachine.TestCase
