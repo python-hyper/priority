@@ -97,14 +97,6 @@ def active_readme_streams_from_filter(filtered, blocked=True):
     return get_expected(tree)
 
 
-def active_streams_from_unblocked(unblocked):
-    """
-    Given a collection of unblocked streams, determine which ones are active.
-    This applies only to the readme tree at this time, though in future it
-    should be possible to apply this to an arbitrary tree.
-    """
-
-
 class TestStream(object):
     def test_stream_repr(self):
         """
