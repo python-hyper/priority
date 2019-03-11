@@ -12,7 +12,7 @@ import itertools
 
 import pytest
 
-from hypothesis import given
+from hypothesis import given, settings
 from hypothesis.stateful import invariant, RuleBasedStateMachine, rule
 from hypothesis.strategies import (
     integers, lists, tuples, sampled_from
@@ -503,6 +503,7 @@ class TestPriorityTreeOutput(object):
     fairness and equidistribution.
     """
     @given(STREAMS_AND_WEIGHTS)
+    @settings(deadline=500)
     def test_period_of_repetition(self, streams_and_weights):
         """
         The period of repetition of a priority sequence is given by the sum of
