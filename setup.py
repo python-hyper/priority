@@ -10,7 +10,7 @@ PROJECT_ROOT = os.path.dirname(__file__)
 
 with open(os.path.join(PROJECT_ROOT, 'README.rst')) as file_:
     long_description = file_.read()
-long_description +='\n\n'
+long_description += '\n\n'
 with open(os.path.join(PROJECT_ROOT, 'HISTORY.rst')) as file_:
     long_description += file_.read()
 
@@ -41,7 +41,9 @@ setup(
         'Changelog': 'https://github.com/python-hyper/priority/blob/master/HISTORY.rst',
     },
     packages=find_packages(where='src'),
-    package_data={'': ['LICENSE', 'README.rst', 'CONTRIBUTORS.rst', 'HISTORY.rst']},
+    package_data={
+        '': ['LICENSE', 'README.rst', 'CONTRIBUTORS.rst', 'HISTORY.rst']
+    },
     package_dir={'': 'src'},
     python_requires='>=3.6.1',
     include_package_data=True,
@@ -60,6 +62,6 @@ setup(
         'Programming Language :: Python :: Implementation :: PyPy',
     ],
     extras_require={
-        "mypy":  ["mypy>=0.812"],
+        "mypy": ["mypy>=0.812"],
     },
 )

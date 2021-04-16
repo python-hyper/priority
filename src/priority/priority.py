@@ -22,6 +22,7 @@ class DeadlockError(PriorityError):
     Raised when there are no streams that can make progress: all streams are
     blocked.
     """
+
     pass
 
 
@@ -29,6 +30,7 @@ class PriorityLoop(PriorityError):
     """
     An unexpected priority loop has been detected. The tree is invalid.
     """
+
     pass
 
 
@@ -36,6 +38,7 @@ class DuplicateStreamError(PriorityError):
     """
     An attempt was made to insert a stream that already exists.
     """
+
     pass
 
 
@@ -43,6 +46,7 @@ class MissingStreamError(KeyError, PriorityError):
     """
     An operation was attempted on a stream that is not present in the tree.
     """
+
     pass
 
 
@@ -53,6 +57,7 @@ class TooManyStreamsError(PriorityError):
 
     .. versionadded:: 1.2.0
     """
+
     pass
 
 
@@ -62,6 +67,7 @@ class BadWeightError(PriorityError):
 
     .. versionadded:: 1.3.0
     """
+
     pass
 
 
@@ -71,6 +77,7 @@ class PseudoStreamError(PriorityError):
 
     .. versionadded:: 1.3.0
     """
+
     pass
 
 
@@ -81,6 +88,7 @@ class Stream:
     :param stream_id: The stream ID for the new stream.
     :param weight: (optional) The stream weight. Defaults to 16.
     """
+
     def __init__(self, stream_id, weight=16):  # type: (int, int) -> None
         self.stream_id = stream_id
         self.weight = weight
@@ -103,7 +111,8 @@ class Stream:
             raise BadWeightError("Stream weight should be an integer")
         elif not (1 <= value <= 256):
             raise BadWeightError(
-                "Stream weight must be between 1 and 256 (inclusive)")
+                "Stream weight must be between 1 and 256 (inclusive)"
+            )
         self._weight = value
 
     def add_child(self, child):  # type: (Stream) -> None
@@ -291,7 +300,8 @@ class PriorityTree:
         default.
     :type maximum_streams: ``int``
     """
-    def __init__(self, maximum_streams=1000): # type: (int) -> None
+
+    def __init__(self, maximum_streams=1000):  # type: (int) -> None
         # This flat array keeps hold of all the streams that are logically
         # dependent on stream 0.
         self._root_stream = Stream(stream_id=0, weight=1)
@@ -304,7 +314,7 @@ class PriorityTree:
             raise ValueError("maximum_streams must be a positive integer.")
         self._maximum_streams = maximum_streams
 
-    def _get_or_insert_parent(self, parent_stream_id): # type: (int) -> Stream
+    def _get_or_insert_parent(self, parent_stream_id):  # type: (int) -> Stream
         """
         When inserting or reprioritizing a stream it is possible to make it
         dependent on a stream that is no longer in the tree. In this situation,
@@ -335,7 +345,7 @@ class PriorityTree:
         stream_id,  # type: int
         depends_on=None,  # type: Optional[int]
         weight=16,  # type: int
-        exclusive=False, # type: bool
+        exclusive=False,  # type: bool
     ):
         # type: (...) -> None
         """
@@ -354,9 +364,8 @@ class PriorityTree:
 
         if (len(self._streams) + 1) > self._maximum_streams:
             raise TooManyStreamsError(
-                "Refusing to insert %d streams into priority tree at once" % (
-                    self._maximum_streams + 1
-                )
+                "Refusing to insert %d streams into priority tree at once"
+                % (self._maximum_streams + 1)
             )
 
         stream = Stream(stream_id, weight)
@@ -428,8 +437,12 @@ class PriorityTree:
         # its parent, and make it a child of our current parent, and then
         # continue.
         if cycle:
-            new_parent.parent.remove_child(new_parent)  # type: ignore[union-attr]
-            current_stream.parent.add_child(new_parent)  # type: ignore[union-attr]
+            new_parent.parent.remove_child(
+                new_parent,  # type: ignore[union-attr]
+            )
+            current_stream.parent.add_child(
+                new_parent,  # type: ignore[union-attr]
+            )
 
         current_stream.parent.remove_child(  # type: ignore[union-attr]
             current_stream, strip_children=False
@@ -457,8 +470,7 @@ class PriorityTree:
         parent = child.parent
         parent.remove_child(child)  # type: ignore[union-attr]
 
-
-    def block(self, stream_id): # type: (int) -> None
+    def block(self, stream_id):  # type: (int) -> None
         """
         Marks a given stream as blocked, with no data to send.
 

@@ -21,7 +21,9 @@ sys.path.insert(0, os.path.abspath('../..'))
 PROJECT_ROOT = os.path.dirname(__file__)
 # Get the version
 version_regex = r'__version__ = ["\']([^"\']*)["\']'
-with open(os.path.join(PROJECT_ROOT, '../../', 'src/priority/__init__.py')) as file_:
+with open(
+    os.path.join(PROJECT_ROOT, '../../', 'src/priority/__init__.py')
+) as file_:
     text = file_.read()
     match = re.search(version_regex, text)
     assert match
