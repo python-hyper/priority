@@ -433,11 +433,11 @@ class PriorityTree:
         # its parent, and make it a child of our current parent, and then
         # continue.
         if cycle:
-            new_parent.parent.remove_child(
-                new_parent,  # type: ignore[union-attr]
+            new_parent.parent.remove_child(  # type: ignore[union-attr]
+                new_parent,
             )
-            current_stream.parent.add_child(
-                new_parent,  # type: ignore[union-attr]
+            current_stream.parent.add_child(  # type: ignore[union-attr]
+                new_parent,
             )
 
         current_stream.parent.remove_child(  # type: ignore[union-attr]
