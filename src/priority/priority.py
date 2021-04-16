@@ -115,7 +115,7 @@ class Stream:
             )
         self._weight = value
 
-    def add_child(self, child: Stream) -> None:
+    def add_child(self, child: "Stream") -> None:
         """
         Add a stream that depends on this one.
 
@@ -125,7 +125,7 @@ class Stream:
         self.children.append(child)
         heapq.heappush(self.child_queue, (self.last_weight, child))
 
-    def add_child_exclusive(self, child: Stream) -> None:
+    def add_child_exclusive(self, child: "Stream") -> None:
         """
         Add a stream that exclusively depends on this one.
 
@@ -142,7 +142,7 @@ class Stream:
 
     def remove_child(
         self,
-        child: Stream,
+        child: "Stream",
         strip_children: bool = True,
     ) -> None:
         """
@@ -228,25 +228,25 @@ class Stream:
     def __ne__(self, other: object) -> bool:
         return not self.__eq__(other)
 
-    def __lt__(self, other: Stream) -> bool:
+    def __lt__(self, other: "Stream") -> bool:
         if not isinstance(other, Stream):  # pragma: no cover
             return NotImplemented
 
         return self.stream_id < other.stream_id
 
-    def __le__(self, other: Stream) -> bool:
+    def __le__(self, other: "Stream") -> bool:
         if not isinstance(other, Stream):  # pragma: no cover
             return NotImplemented
 
         return self.stream_id <= other.stream_id
 
-    def __gt__(self, other: Stream) -> bool:
+    def __gt__(self, other: "Stream") -> bool:
         if not isinstance(other, Stream):  # pragma: no cover
             return NotImplemented
 
         return self.stream_id > other.stream_id
 
-    def __ge__(self, other: Stream) -> bool:
+    def __ge__(self, other: "Stream") -> bool:
         if not isinstance(other, Stream):  # pragma: no cover
             return NotImplemented
 
@@ -495,7 +495,7 @@ class PriorityTree:
             raise MissingStreamError("Stream %d not in tree" % stream_id)
 
     # The iterator protocol
-    def __iter__(self) -> PriorityTree:  # pragma: no cover
+    def __iter__(self) -> "PriorityTree":  # pragma: no cover
         return self
 
     def __next__(self) -> int:  # pragma: no cover
