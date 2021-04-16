@@ -6,6 +6,7 @@ test_priority
 Tests for the Priority trees
 """
 
+import operator
 import collections
 import itertools
 
@@ -19,12 +20,14 @@ from hypothesis.strategies import (
 
 import priority
 
+from typing import Iterable, List, Dict, Any
+
 
 STREAMS_AND_WEIGHTS = lists(
     elements=tuples(
         integers(min_value=1), integers(min_value=1, max_value=255)
     ),
-    unique_by=lambda x: x[0],
+    unique_by=operator.itemgetter(0),
 )
 
 BLOCKED_AND_ACTIVE = lists(
@@ -58,7 +61,12 @@ def readme_tree():
     return p
 
 
-def active_readme_streams_from_filter(filtered, blocked=True):
+
+def active_readme_streams_from_filter(
+    filtered,  # type: Iterable[int]
+    blocked=True,  # type: bool
+):
+    # type: (...) -> List[int]
     """
     Given a collection of filtered streams, determine which ones are active.
     This applies only to the readme tree at this time, though in future it
@@ -80,7 +88,7 @@ def active_readme_streams_from_filter(filtered, blocked=True):
     }
     filtered = set(filtered)
 
-    def get_expected(tree):
+    def get_expected(tree): # type: (Dict[Any, Any]) -> List[int]
         expected = []
 
         for stream_id in tree:
@@ -570,7 +578,7 @@ class PriorityStateMachine(RuleBasedStateMachine):
         self.stream_ids = set([0])
         self.blocked_stream_ids = set()
 
-    @rule(stream_id=integers())
+    @rule(stream_id=integers())  # type: ignore[no-untyped-call]
     def insert_stream(self, stream_id):
         try:
             self.tree.insert_stream(stream_id)
@@ -590,24 +598,24 @@ class PriorityStateMachine(RuleBasedStateMachine):
         else:
             assert stream_id in self.stream_ids
 
-    @rule(stream_id=integers())
+    @rule(stream_id=integers())  # type: ignore[no-untyped-call]
     def remove_stream(self, stream_id):
         self._run_action(self.tree.remove_stream, stream_id)
         if stream_id != 0:
             self.stream_ids.discard(stream_id)
 
-    @rule(stream_id=integers())
+    @rule(stream_id=integers())  # type: ignore[no-untyped-call]
     def block_stream(self, stream_id):
         self._run_action(self.tree.block, stream_id)
         if (stream_id != 0) and (stream_id in self.stream_ids):
             self.blocked_stream_ids.add(stream_id)
 
-    @rule(stream_id=integers())
+    @rule(stream_id=integers())  # type: ignore[no-untyped-call]
     def unblock_stream(self, stream_id):
         self._run_action(self.tree.unblock, stream_id)
         self.blocked_stream_ids.discard(stream_id)
 
-    @invariant()
+    @invariant()  # type: ignore[no-untyped-call]
     def check_next_stream_consistent(self):
         """
         If we ask priority for the next stream, it always returns a sensible

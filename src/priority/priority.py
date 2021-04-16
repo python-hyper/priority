@@ -8,6 +8,8 @@ Implementation of the Priority tree data structure.
 
 import heapq
 
+from typing import List, Tuple, Optional
+
 
 class PriorityError(Exception):
     """
@@ -79,22 +81,22 @@ class Stream:
     :param stream_id: The stream ID for the new stream.
     :param weight: (optional) The stream weight. Defaults to 16.
     """
-    def __init__(self, stream_id, weight=16):
+    def __init__(self, stream_id, weight=16):  # type: (int, int) -> None
         self.stream_id = stream_id
         self.weight = weight
-        self.children = []
-        self.parent = None
-        self.child_queue = []
+        self.children = []  # type: List[Stream]
+        self.parent = None  # type: Optional[Stream]
+        self.child_queue = []  # type: List[Tuple[int, Stream]]
         self.active = True
         self.last_weight = 0
         self._deficit = 0
 
     @property
-    def weight(self):
+    def weight(self):  # type: () -> int
         return self._weight
 
     @weight.setter
-    def weight(self, value):
+    def weight(self, value):  # type: (int) -> None
         # RFC 7540 § 5.3.2: "All dependent streams are allocated an integer
         # weight between 1 and 256 (inclusive)."
         if not isinstance(value, int):
@@ -104,7 +106,7 @@ class Stream:
                 "Stream weight must be between 1 and 256 (inclusive)")
         self._weight = value
 
-    def add_child(self, child):
+    def add_child(self, child):  # type: (Stream) -> None
         """
         Add a stream that depends on this one.
 
@@ -114,7 +116,7 @@ class Stream:
         self.children.append(child)
         heapq.heappush(self.child_queue, (self.last_weight, child))
 
-    def add_child_exclusive(self, child):
+    def add_child_exclusive(self, child):  # type: (Stream) -> None
         """
         Add a stream that exclusively depends on this one.
 
@@ -129,7 +131,12 @@ class Stream:
         for old_child in old_children:
             child.add_child(old_child)
 
-    def remove_child(self, child, strip_children=True):
+    def remove_child(
+        self,
+        child,  # type: Stream
+        strip_children=True,  # type: bool
+    ):
+        # type: (...) -> None
         """
         Removes a child stream from this stream. This is a potentially somewhat
         expensive operation.
@@ -145,7 +152,7 @@ class Stream:
         #   it in the old one
         self.children.remove(child)
 
-        new_queue = []
+        new_queue = []  # type: List[Tuple[int, Stream]]
 
         while self.child_queue:
             level, stream = heapq.heappop(self.child_queue)
@@ -160,7 +167,7 @@ class Stream:
             for new_child in child.children:
                 self.add_child(new_child)
 
-    def schedule(self):
+    def schedule(self):  # type: () -> int
         """
         Returns the stream ID of the next child to schedule. Potentially
         recurses down the tree of priorities.
@@ -200,45 +207,45 @@ class Stream:
         return next_stream
 
     # Custom repr
-    def __repr__(self):
+    def __repr__(self):  # type: () -> str
         return "Stream<id=%d, weight=%d>" % (self.stream_id, self.weight)
 
     # Custom comparison
-    def __eq__(self, other):
+    def __eq__(self, other):  # type: (object) -> bool
         if not isinstance(other, Stream):  # pragma: no cover
             return False
 
         return self.stream_id == other.stream_id
 
-    def __ne__(self, other):
+    def __ne__(self, other):  # type: (object) -> bool
         return not self.__eq__(other)
 
-    def __lt__(self, other):
+    def __lt__(self, other):  # type: (Stream) -> bool
         if not isinstance(other, Stream):  # pragma: no cover
             return NotImplemented
 
         return self.stream_id < other.stream_id
 
-    def __le__(self, other):
+    def __le__(self, other):  # type: (Stream) -> bool
         if not isinstance(other, Stream):  # pragma: no cover
             return NotImplemented
 
         return self.stream_id <= other.stream_id
 
-    def __gt__(self, other):
+    def __gt__(self, other):  # type: (Stream) -> bool
         if not isinstance(other, Stream):  # pragma: no cover
             return NotImplemented
 
         return self.stream_id > other.stream_id
 
-    def __ge__(self, other):
+    def __ge__(self, other):  # type: (Stream) -> bool
         if not isinstance(other, Stream):  # pragma: no cover
             return NotImplemented
 
         return self.stream_id >= other.stream_id
 
 
-def _stream_cycle(new_parent, current):
+def _stream_cycle(new_parent, current):  # type: (Stream, Stream) -> bool
     """
     Reports whether the new parent depends on the current stream.
     """
@@ -248,7 +255,7 @@ def _stream_cycle(new_parent, current):
     # get more than 100 streams deep. This should catch accidental
     # tree loops. This is the definition of defensive programming.
     for _ in range(100):
-        parent = parent.parent
+        parent = parent.parent  # type: ignore[assignment]
         if parent.stream_id == current.stream_id:
             return True
         elif parent.stream_id == 0:
@@ -284,7 +291,7 @@ class PriorityTree:
         default.
     :type maximum_streams: ``int``
     """
-    def __init__(self, maximum_streams=1000):
+    def __init__(self, maximum_streams=1000): # type: (int) -> None
         # This flat array keeps hold of all the streams that are logically
         # dependent on stream 0.
         self._root_stream = Stream(stream_id=0, weight=1)
@@ -297,7 +304,7 @@ class PriorityTree:
             raise ValueError("maximum_streams must be a positive integer.")
         self._maximum_streams = maximum_streams
 
-    def _get_or_insert_parent(self, parent_stream_id):
+    def _get_or_insert_parent(self, parent_stream_id): # type: (int) -> Stream
         """
         When inserting or reprioritizing a stream it is possible to make it
         dependent on a stream that is no longer in the tree. In this situation,
@@ -311,18 +318,26 @@ class PriorityTree:
             self.block(parent_stream_id)
             return self._streams[parent_stream_id]
 
-    def _exclusive_insert(self, parent_stream, inserted_stream):
+    def _exclusive_insert(
+        self,
+        parent_stream,  # type: Stream
+        inserted_stream,  # type: Stream
+    ):
+        # type: (...) -> None
         """
         Insert ``inserted_stream`` beneath ``parent_stream``, obeying the
         semantics of exclusive insertion.
         """
         parent_stream.add_child_exclusive(inserted_stream)
 
-    def insert_stream(self,
-                      stream_id,
-                      depends_on=None,
-                      weight=16,
-                      exclusive=False):
+    def insert_stream(
+        self,
+        stream_id,  # type: int
+        depends_on=None,  # type: Optional[int]
+        weight=16,  # type: int
+        exclusive=False, # type: bool
+    ):
+        # type: (...) -> None
         """
         Insert a stream into the tree.
 
@@ -363,11 +378,14 @@ class PriorityTree:
         parent.add_child(stream)
         self._streams[stream_id] = stream
 
-    def reprioritize(self,
-                     stream_id,
-                     depends_on=None,
-                     weight=16,
-                     exclusive=False):
+    def reprioritize(
+        self,
+        stream_id,  # type: int
+        depends_on=None,  # type: Optional[int]
+        weight=16,  # type: int
+        exclusive=False,  # type: bool
+    ):
+        # type: (...) -> None
         """
         Update the priority status of a stream already in the tree.
 
@@ -410,10 +428,10 @@ class PriorityTree:
         # its parent, and make it a child of our current parent, and then
         # continue.
         if cycle:
-            new_parent.parent.remove_child(new_parent)
-            current_stream.parent.add_child(new_parent)
+            new_parent.parent.remove_child(new_parent)  # type: ignore[union-attr]
+            current_stream.parent.add_child(new_parent)  # type: ignore[union-attr]
 
-        current_stream.parent.remove_child(
+        current_stream.parent.remove_child(  # type: ignore[union-attr]
             current_stream, strip_children=False
         )
 
@@ -422,7 +440,7 @@ class PriorityTree:
         else:
             new_parent.add_child(current_stream)
 
-    def remove_stream(self, stream_id):
+    def remove_stream(self, stream_id):  # type: (int) -> None
         """
         Removes a stream from the priority tree.
 
@@ -437,9 +455,10 @@ class PriorityTree:
             raise MissingStreamError("Stream %d not in tree" % stream_id)
 
         parent = child.parent
-        parent.remove_child(child)
+        parent.remove_child(child)  # type: ignore[union-attr]
 
-    def block(self, stream_id):
+
+    def block(self, stream_id): # type: (int) -> None
         """
         Marks a given stream as blocked, with no data to send.
 
@@ -453,7 +472,7 @@ class PriorityTree:
         except KeyError:
             raise MissingStreamError("Stream %d not in tree" % stream_id)
 
-    def unblock(self, stream_id):
+    def unblock(self, stream_id):  # type: (int) -> None
         """
         Marks a given stream as unblocked, with more data to send.
 
@@ -468,14 +487,14 @@ class PriorityTree:
             raise MissingStreamError("Stream %d not in tree" % stream_id)
 
     # The iterator protocol
-    def __iter__(self):  # pragma: no cover
+    def __iter__(self):  # type: () -> PriorityTree  # pragma: no cover
         return self
 
-    def __next__(self):  # pragma: no cover
+    def __next__(self):  # type: () -> int  # pragma: no cover
         try:
             return self._root_stream.schedule()
         except IndexError:
             raise DeadlockError("No unblocked streams to schedule.")
 
-    def next(self):  # pragma: no cover
+    def next(self):  # type: () -> int  # pragma: no cover
         return self.__next__()

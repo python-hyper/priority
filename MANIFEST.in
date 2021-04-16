@@ -5,5 +5,5 @@ graft visualizer
 graft examples
 prune docs/build
 recursive-include *.py
-include README.rst LICENSE CONTRIBUTORS.rst HISTORY.rst tox.ini Makefile
+include README.rst LICENSE CONTRIBUTORS.rst HISTORY.rst tox.ini Makefile src/priority/py.typed
 global-exclude *.pyc *.pyo *.swo *.swp *.map *.yml *.DS_Store
