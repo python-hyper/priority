@@ -59,10 +59,9 @@ def readme_tree():
 
 
 def active_readme_streams_from_filter(
-    filtered,  # type: Iterable[int]
-    blocked=True,  # type: bool
-):
-    # type: (...) -> List[int]
+    filtered: Iterable[int],
+    blocked: bool = True,
+) -> List[int]:
     """
     Given a collection of filtered streams, determine which ones are active.
     This applies only to the readme tree at this time, though in future it
@@ -84,7 +83,7 @@ def active_readme_streams_from_filter(
     }
     filtered = set(filtered)
 
-    def get_expected(tree):  # type: (Dict[Any, Any]) -> List[int]
+    def get_expected(tree: Dict[Any, Any]) -> List[int]:
         expected = []
 
         for stream_id in tree:
