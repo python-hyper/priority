@@ -1,11 +1,18 @@
 Changelog
 =========
 
-1.4.0-dev
+2.0.0-dev
 ---------
 
 **API Changes**
 
+- Support for Python 2.7 has been removed.
+- Support for Python 3.3 has been removed.
+- Support for Python 3.4 has been removed.
+- Support for Python 3.5 has been removed.
+- Support for PyPy (Python 2.7 compatible) has been removed.
+- Support for Python 3.8 has been added.
+- Support for Python 3.9 has been added.
 - Throw ``TypeError`` when creating a priority tree with a ``maximum_streams``
   value that is not an integer.
 - Throw ``ValueError`` when creating a priority tree with a ``maximum_streams``
