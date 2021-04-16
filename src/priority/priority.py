@@ -5,13 +5,8 @@ priority/tree
 
 Implementation of the Priority tree data structure.
 """
-from __future__ import division
 
 import heapq
-import sys
-
-
-PY3 = sys.version_info[0] == 3
 
 
 class PriorityError(Exception):
@@ -77,7 +72,7 @@ class PseudoStreamError(PriorityError):
     pass
 
 
-class Stream(object):
+class Stream:
     """
     Priority information for a given stream.
 
@@ -264,7 +259,7 @@ def _stream_cycle(new_parent, current):
     )  # pragma: no cover
 
 
-class PriorityTree(object):
+class PriorityTree:
     """
     A HTTP/2 Priority Tree.
 

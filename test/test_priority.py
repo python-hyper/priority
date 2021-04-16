@@ -5,14 +5,13 @@ test_priority
 
 Tests for the Priority trees
 """
-from __future__ import division
 
 import collections
 import itertools
 
 import pytest
 
-from hypothesis import given
+from hypothesis import given, settings
 from hypothesis.stateful import invariant, RuleBasedStateMachine, rule
 from hypothesis.strategies import (
     integers, lists, tuples, sampled_from
@@ -97,7 +96,7 @@ def active_readme_streams_from_filter(filtered, blocked=True):
     return get_expected(tree)
 
 
-class TestStream(object):
+class TestStream:
     def test_stream_repr(self):
         """
         The stream representation renders according to the README.
@@ -137,7 +136,7 @@ class TestStream(object):
         assert (s1 != s2) == (a != b)
 
 
-class TestPriorityTreeManual(object):
+class TestPriorityTreeManual:
     """
     These tests manually confirm that the PriorityTree output is correct. They
     use the PriorityTree given in the README and confirm that it outputs data
@@ -495,7 +494,7 @@ class TestPriorityTreeManual(object):
             err.value.args[0] == "maximum_streams must be a positive integer.")
 
 
-class TestPriorityTreeOutput(object):
+class TestPriorityTreeOutput:
     """
     These tests use Hypothesis to attempt to bound the output of iterating over
     the priority tree. In particular, their goal is to ensure that the output
@@ -503,6 +502,7 @@ class TestPriorityTreeOutput(object):
     fairness and equidistribution.
     """
     @given(STREAMS_AND_WEIGHTS)
+    @settings(deadline=None)
     def test_period_of_repetition(self, streams_and_weights):
         """
         The period of repetition of a priority sequence is given by the sum of
