@@ -1,5 +1,22 @@
+==========================================
 Priority: A HTTP/2 Priority Implementation
 ==========================================
+
+.. image:: https://github.com/python-hyper/priority/workflows/CI/badge.svg
+    :target: https://github.com/python-hyper/priority/actions
+    :alt: Build Status
+.. image:: https://codecov.io/gh/python-hyper/priority/branch/master/graph/badge.svg
+    :target: https://codecov.io/gh/python-hyper/priority
+    :alt: Code Coverage
+.. image:: https://readthedocs.org/projects/priority/badge/?version=latest
+    :target: https://priority.readthedocs.io/en/latest/
+    :alt: Documentation Status
+.. image:: https://img.shields.io/badge/chat-join_now-brightgreen.svg
+    :target: https://gitter.im/python-hyper/community
+    :alt: Chat community
+
+.. image:: https://raw.github.com/python-hyper/documentation/master/source/logo/hyper-black-bg-white.png
+
 
 Priority is a pure-Python implementation of the priority logic for HTTP/2, set
 out in `RFC 7540 Section 5.3 (Stream Priority)`_. This logic allows for clients
