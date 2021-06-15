@@ -1,25 +1,19 @@
-#!/usr/bin/env python
-# -*- coding: utf-8 -*-
+#!/usr/bin/env python3
+
 import os
 import re
 
 from setuptools import setup, find_packages
 
-
 PROJECT_ROOT = os.path.dirname(__file__)
 
 with open(os.path.join(PROJECT_ROOT, 'README.rst')) as file_:
     long_description = file_.read()
-long_description +='\n\n'
-with open(os.path.join(PROJECT_ROOT, 'HISTORY.rst')) as file_:
-    long_description += file_.read()
 
-# Get the version
 version_regex = r'__version__ = ["\']([^"\']*)["\']'
 with open(os.path.join(PROJECT_ROOT, 'src/priority/__init__.py')) as file_:
     text = file_.read()
     match = re.search(version_regex, text)
-
     if match:
         version = match.group(1)
     else:
@@ -41,10 +35,9 @@ setup(
         'Changelog': 'https://github.com/python-hyper/priority/blob/master/HISTORY.rst',
     },
     packages=find_packages(where='src'),
-    package_data={'': ['LICENSE', 'README.rst', 'CONTRIBUTORS.rst', 'HISTORY.rst']},
+    package_data={'priority': ['py.typed']},
     package_dir={'': 'src'},
     python_requires='>=3.6.1',
-    include_package_data=True,
     license='MIT License',
     classifiers=[
         'Development Status :: 5 - Production/Stable',
