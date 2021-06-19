@@ -13,6 +13,8 @@ Changelog
 - Support for PyPy (Python 2.7 compatible) has been removed.
 - Support for Python 3.8 has been added.
 - Support for Python 3.9 has been added.
+- Add type hints throughout and support PEP 561 via a py.typed
+  file. This should allow projects to type check their usage of this dependency.
 - Throw ``TypeError`` when creating a priority tree with a ``maximum_streams``
   value that is not an integer.
 - Throw ``ValueError`` when creating a priority tree with a ``maximum_streams``
