@@ -6,6 +6,7 @@ test_priority
 Tests for the Priority trees
 """
 
+import operator
 import collections
 import itertools
 
@@ -13,34 +14,31 @@ import pytest
 
 from hypothesis import given, settings
 from hypothesis.stateful import invariant, RuleBasedStateMachine, rule
-from hypothesis.strategies import (
-    integers, lists, tuples, sampled_from
-)
+from hypothesis.strategies import integers, lists, tuples, sampled_from
 
 import priority
 
+from typing import Iterable, List, Dict, Any
+
 
 STREAMS_AND_WEIGHTS = lists(
-    elements=tuples(
-        integers(min_value=1), integers(min_value=1, max_value=255)
-    ),
-    unique_by=lambda x: x[0],
+    elements=tuples(integers(min_value=1), integers(min_value=1, max_value=255)),
+    unique_by=operator.itemgetter(0),
 )
 
 BLOCKED_AND_ACTIVE = lists(
     elements=sampled_from([1, 3, 5, 7, 9, 11]),
     unique=True,
-).map(
-    lambda blocked: (blocked, active_readme_streams_from_filter(blocked))
-)
+).map(lambda blocked: (blocked, active_readme_streams_from_filter(blocked)))
 
 UNBLOCKED_AND_ACTIVE = lists(
     elements=sampled_from([1, 3, 5, 7, 9, 11]),
     unique=True,
 ).map(
-    lambda unblocked: (unblocked, active_readme_streams_from_filter(
-        unblocked, blocked=False
-    ))
+    lambda unblocked: (
+        unblocked,
+        active_readme_streams_from_filter(unblocked, blocked=False),
+    )
 )
 
 
@@ -58,7 +56,10 @@ def readme_tree():
     return p
 
 
-def active_readme_streams_from_filter(filtered, blocked=True):
+def active_readme_streams_from_filter(
+    filtered: Iterable[int],
+    blocked: bool = True,
+) -> List[int]:
     """
     Given a collection of filtered streams, determine which ones are active.
     This applies only to the readme tree at this time, though in future it
@@ -80,7 +81,7 @@ def active_readme_streams_from_filter(filtered, blocked=True):
     }
     filtered = set(filtered)
 
-    def get_expected(tree):
+    def get_expected(tree: Dict[Any, Any]) -> List[int]:
         expected = []
 
         for stream_id in tree:
@@ -110,16 +111,15 @@ class TestStream:
         Streams are ordered by their stream ID.
         """
         stream_list = [
-            priority.Stream(stream_id=s, weight=w)
-            for s, w in streams_and_weights
+            priority.Stream(stream_id=s, weight=w) for s, w in streams_and_weights
         ]
         stream_list = sorted(stream_list)
         streams_by_id = [stream.stream_id for stream in stream_list]
         assert sorted(streams_by_id) == streams_by_id
 
     @given(
-        integers(min_value=1, max_value=2**24),
-        integers(min_value=1, max_value=2**24)
+        integers(min_value=1, max_value=2 ** 24),
+        integers(min_value=1, max_value=2 ** 24),
     )
     def test_stream_ordering(self, a, b):
         """
@@ -146,9 +146,9 @@ class TestPriorityTreeManual:
     Hypothesis-based ones for the same data, but getting Hypothesis to generate
     useful data in this case is going to be quite tricky.
     """
+
     @given(BLOCKED_AND_ACTIVE)
-    def test_priority_tree_initially_outputs_all_stream_ids(self,
-                                                            blocked_expected):
+    def test_priority_tree_initially_outputs_all_stream_ids(self, blocked_expected):
         """
         The first iterations of the priority tree initially output the active
         streams, in order of stream ID, regardless of weight.
@@ -164,8 +164,7 @@ class TestPriorityTreeManual:
         assert expected == result
 
     @given(UNBLOCKED_AND_ACTIVE)
-    def test_priority_tree_blocking_is_isomorphic(self,
-                                                  allowed_expected):
+    def test_priority_tree_blocking_is_isomorphic(self, allowed_expected):
         """
         Blocking everything and then unblocking certain ones has the same
         effect as blocking specific streams.
@@ -184,8 +183,7 @@ class TestPriorityTreeManual:
         assert expected == result
 
     @given(BLOCKED_AND_ACTIVE)
-    def test_removing_items_behaves_similarly_to_blocking(self,
-                                                          blocked_expected):
+    def test_removing_items_behaves_similarly_to_blocking(self, blocked_expected):
         """
         From the perspective of iterating over items, removing streams should
         have the same effect as blocking them, except that the ordering
@@ -214,32 +212,28 @@ class TestPriorityTreeManual:
             next(tree)
 
     @pytest.mark.parametrize(
-        'stream,new_parent,exclusive,weight,blocked,result',
+        "stream,new_parent,exclusive,weight,blocked,result",
         [
-            (1,  3,    False, 16, [],     [3, 7, 7, 3, 7, 7, 3, 7, 7]),
-            (1,  5,    False, 16, [],     [3, 5, 7, 7, 3, 5, 7, 7, 3]),
-            (1,  5,    False, 16, [5],    [3, 1, 7, 7, 3, 1, 7, 7, 3]),
-            (5,  7,    False, 16, [7, 1], [3, 5, 11, 3, 5, 11, 3, 5, 11]),
-            (11, None, False, 16, [],     [1, 3, 7, 11, 7, 1, 3, 7, 11]),
-            (11, None, False, 16, [11],   [1, 3, 7, 9, 7, 1, 3, 7, 9]),
-            (7,  9,    False, 16, [],     [1, 3, 9, 1, 3, 1, 3, 9, 1]),
-            (7,  1,    True,  16, [],     [1, 3, 1, 3, 1, 3, 1, 3, 1]),
-            (7,  1,    True,  16, [1],    [7, 3, 7, 3, 7, 3, 7, 3, 7]),
-            (7,  1,    True,  16, [1, 7], [5, 3, 11, 3, 5, 3, 11, 3, 5]),
-            (1,  0,    False, 32, [],     [1, 3, 7, 1, 7, 1, 3, 7, 1]),
-            (1,  0,    True,  32, [],     [1, 1, 1, 1, 1, 1, 1, 1, 1]),
-            (1,  0,    True,  32, [1],    [3, 5, 7, 7, 3, 5, 7, 7, 3]),
-            (1,  None, True,  32, [],     [1, 1, 1, 1, 1, 1, 1, 1, 1]),
-            (1,  None, True,  32, [1],    [3, 5, 7, 7, 3, 5, 7, 7, 3]),
-        ]
+            (1, 3, False, 16, [], [3, 7, 7, 3, 7, 7, 3, 7, 7]),
+            (1, 5, False, 16, [], [3, 5, 7, 7, 3, 5, 7, 7, 3]),
+            (1, 5, False, 16, [5], [3, 1, 7, 7, 3, 1, 7, 7, 3]),
+            (5, 7, False, 16, [7, 1], [3, 5, 11, 3, 5, 11, 3, 5, 11]),
+            (11, None, False, 16, [], [1, 3, 7, 11, 7, 1, 3, 7, 11]),
+            (11, None, False, 16, [11], [1, 3, 7, 9, 7, 1, 3, 7, 9]),
+            (7, 9, False, 16, [], [1, 3, 9, 1, 3, 1, 3, 9, 1]),
+            (7, 1, True, 16, [], [1, 3, 1, 3, 1, 3, 1, 3, 1]),
+            (7, 1, True, 16, [1], [7, 3, 7, 3, 7, 3, 7, 3, 7]),
+            (7, 1, True, 16, [1, 7], [5, 3, 11, 3, 5, 3, 11, 3, 5]),
+            (1, 0, False, 32, [], [1, 3, 7, 1, 7, 1, 3, 7, 1]),
+            (1, 0, True, 32, [], [1, 1, 1, 1, 1, 1, 1, 1, 1]),
+            (1, 0, True, 32, [1], [3, 5, 7, 7, 3, 5, 7, 7, 3]),
+            (1, None, True, 32, [], [1, 1, 1, 1, 1, 1, 1, 1, 1]),
+            (1, None, True, 32, [1], [3, 5, 7, 7, 3, 5, 7, 7, 3]),
+        ],
     )
-    def test_can_reprioritize_a_stream(self,
-                                       stream,
-                                       new_parent,
-                                       exclusive,
-                                       weight,
-                                       blocked,
-                                       result):
+    def test_can_reprioritize_a_stream(
+        self, stream, new_parent, exclusive, weight, blocked, result
+    ):
         """
         Reprioritizing streams adjusts the outputs of the tree.
         """
@@ -307,17 +301,14 @@ class TestPriorityTreeManual:
         with pytest.raises(priority.PseudoStreamError):
             p.remove_stream(0)
 
-    @pytest.mark.parametrize('exclusive', [True, False])
-    def test_priority_allows_inserting_stream_with_absent_parent(self,
-                                                                 exclusive):
+    @pytest.mark.parametrize("exclusive", [True, False])
+    def test_priority_allows_inserting_stream_with_absent_parent(self, exclusive):
         """
         Attemping to insert a stream that depends on a stream that is not in
         the tree automatically inserts the parent with default priority.
         """
         p = priority.PriorityTree()
-        p.insert_stream(
-            stream_id=3, depends_on=1, exclusive=exclusive, weight=32
-        )
+        p.insert_stream(stream_id=3, depends_on=1, exclusive=exclusive, weight=32)
 
         # Iterate 10 times to prove that the parent stream starts blocked.
         first_ten_ids = [next(p) for _ in range(0, 10)]
@@ -338,9 +329,8 @@ class TestPriorityTreeManual:
         next_ten_ids = [next(p) for _ in range(0, 10)]
         assert next_ten_ids == [5, 1] * 5
 
-    @pytest.mark.parametrize('exclusive', [True, False])
-    def test_priority_reprioritizing_stream_with_absent_parent(self,
-                                                               exclusive):
+    @pytest.mark.parametrize("exclusive", [True, False])
+    def test_priority_reprioritizing_stream_with_absent_parent(self, exclusive):
         """
         Attemping to reprioritize a stream to depend on a stream that is not in
         the tree automatically inserts the parent with default priority.
@@ -348,9 +338,7 @@ class TestPriorityTreeManual:
         p = priority.PriorityTree()
         p.insert_stream(stream_id=3)
 
-        p.reprioritize(
-            stream_id=3, depends_on=1, exclusive=exclusive, weight=32
-        )
+        p.reprioritize(stream_id=3, depends_on=1, exclusive=exclusive, weight=32)
 
         # Iterate 10 times to prove that the parent stream starts blocked.
         first_ten_ids = [next(p) for _ in range(0, 10)]
@@ -371,7 +359,7 @@ class TestPriorityTreeManual:
         next_ten_ids = [next(p) for _ in range(0, 10)]
         assert next_ten_ids == [5, 1] * 5
 
-    @pytest.mark.parametrize('count', range(2, 10000, 100))
+    @pytest.mark.parametrize("count", range(2, 10000, 100))
     def test_priority_refuses_to_allow_too_many_streams_in_tree(self, count):
         """
         Attempting to insert more streams than maximum_streams into the tree
@@ -386,9 +374,8 @@ class TestPriorityTreeManual:
         with pytest.raises(priority.TooManyStreamsError):
             p.insert_stream(x + 1)
 
-    @pytest.mark.parametrize('depends_on', [0, None])
-    def test_can_insert_stream_with_exclusive_dependency_on_0(self,
-                                                              depends_on):
+    @pytest.mark.parametrize("depends_on", [0, None])
+    def test_can_insert_stream_with_exclusive_dependency_on_0(self, depends_on):
         """
         It is acceptable to insert a stream with an exclusive dependency on
         stream 0, both explicitly and implicitly.
@@ -402,13 +389,7 @@ class TestPriorityTreeManual:
         next_ten_ids = [next(p) for _ in range(0, 10)]
         assert next_ten_ids == [5] * 10
 
-    @pytest.mark.parametrize('weight', [
-        None,
-        0.5,
-        float('inf'),
-        'priority',
-        object
-    ])
+    @pytest.mark.parametrize("weight", [None, 0.5, float("inf"), "priority", object])
     def test_stream_with_non_integer_weight_is_error(self, weight):
         """
         Giving a stream a non-integer weight is rejected.
@@ -416,19 +397,22 @@ class TestPriorityTreeManual:
         p = priority.PriorityTree()
         with pytest.raises(priority.BadWeightError) as err:
             p.insert_stream(stream_id=1, weight=weight)
-        assert err.value.args[0] == 'Stream weight should be an integer'
+        assert err.value.args[0] == "Stream weight should be an integer"
 
         p.insert_stream(stream_id=2)
         with pytest.raises(priority.BadWeightError) as err:
             p.reprioritize(stream_id=2, weight=weight)
-        assert err.value.args[0] == 'Stream weight should be an integer'
+        assert err.value.args[0] == "Stream weight should be an integer"
 
-    @pytest.mark.parametrize('weight', [
-        0,
-        257,
-        1000,
-        -42,
-    ])
+    @pytest.mark.parametrize(
+        "weight",
+        [
+            0,
+            257,
+            1000,
+            -42,
+        ],
+    )
     def test_stream_with_out_of_bounds_weight_is_error(self, weight):
         """
         Giving a stream an out-of-bounds integer weight is rejected.
@@ -437,18 +421,18 @@ class TestPriorityTreeManual:
         with pytest.raises(priority.BadWeightError) as err:
             p.insert_stream(stream_id=1, weight=weight)
         assert (
-            err.value.args[0] ==
-            'Stream weight must be between 1 and 256 (inclusive)')
+            err.value.args[0] == "Stream weight must be between 1 and 256 (inclusive)"
+        )
 
         p.insert_stream(stream_id=2)
         with pytest.raises(priority.BadWeightError) as err:
             p.reprioritize(stream_id=2, weight=weight)
         assert (
-            err.value.args[0] ==
-            'Stream weight must be between 1 and 256 (inclusive)')
+            err.value.args[0] == "Stream weight must be between 1 and 256 (inclusive)"
+        )
 
-    @pytest.mark.parametrize('exclusive', (True, False))
-    @pytest.mark.parametrize('stream_id', (1, 5, 20, 32, 256))
+    @pytest.mark.parametrize("exclusive", (True, False))
+    @pytest.mark.parametrize("stream_id", (1, 5, 20, 32, 256))
     def test_stream_depending_on_self_is_error(self, stream_id, exclusive):
         """
         Inserting a stream that is dependent on itself is rejected.
@@ -459,8 +443,8 @@ class TestPriorityTreeManual:
                 stream_id=stream_id, depends_on=stream_id, exclusive=exclusive
             )
 
-    @pytest.mark.parametrize('exclusive', (True, False))
-    @pytest.mark.parametrize('stream_id', (1, 5, 20, 32, 256))
+    @pytest.mark.parametrize("exclusive", (True, False))
+    @pytest.mark.parametrize("stream_id", (1, 5, 20, 32, 256))
     def test_reprioritize_depend_on_self_is_error(self, stream_id, exclusive):
         """
         Reprioritizing a stream to make it dependent on itself is an error.
@@ -472,7 +456,7 @@ class TestPriorityTreeManual:
                 stream_id=stream_id, depends_on=stream_id, exclusive=exclusive
             )
 
-    @pytest.mark.parametrize('maximum_streams', (None, 'foo', object(), 2.0))
+    @pytest.mark.parametrize("maximum_streams", (None, "foo", object(), 2.0))
     def test_maximum_streams_with_non_int_is_error(self, maximum_streams):
         """
         Creating a PriorityTree with a non-int argument for maximum_streams
@@ -482,7 +466,7 @@ class TestPriorityTreeManual:
             priority.PriorityTree(maximum_streams=maximum_streams)
         assert err.value.args[0] == "maximum_streams must be an int."
 
-    @pytest.mark.parametrize('maximum_streams', (0, -1, -50))
+    @pytest.mark.parametrize("maximum_streams", (0, -1, -50))
     def test_maximum_streams_with_bad_int_is_error(self, maximum_streams):
         """
         Creating a PriorityTree with a non-positive integer for maximum_streams
@@ -490,8 +474,7 @@ class TestPriorityTreeManual:
         """
         with pytest.raises(ValueError) as err:
             priority.PriorityTree(maximum_streams=maximum_streams)
-        assert (
-            err.value.args[0] == "maximum_streams must be a positive integer.")
+        assert err.value.args[0] == "maximum_streams must be a positive integer."
 
 
 class TestPriorityTreeOutput:
@@ -501,6 +484,7 @@ class TestPriorityTreeOutput:
     of the tree is "good enough": that it meets certain requirements on
     fairness and equidistribution.
     """
+
     @given(STREAMS_AND_WEIGHTS)
     @settings(deadline=None)
     def test_period_of_repetition(self, streams_and_weights):
@@ -570,7 +554,7 @@ class PriorityStateMachine(RuleBasedStateMachine):
         self.stream_ids = set([0])
         self.blocked_stream_ids = set()
 
-    @rule(stream_id=integers())
+    @rule(stream_id=integers())  # type: ignore[no-untyped-call]
     def insert_stream(self, stream_id):
         try:
             self.tree.insert_stream(stream_id)
@@ -590,24 +574,24 @@ class PriorityStateMachine(RuleBasedStateMachine):
         else:
             assert stream_id in self.stream_ids
 
-    @rule(stream_id=integers())
+    @rule(stream_id=integers())  # type: ignore[no-untyped-call]
     def remove_stream(self, stream_id):
         self._run_action(self.tree.remove_stream, stream_id)
         if stream_id != 0:
             self.stream_ids.discard(stream_id)
 
-    @rule(stream_id=integers())
+    @rule(stream_id=integers())  # type: ignore[no-untyped-call]
     def block_stream(self, stream_id):
         self._run_action(self.tree.block, stream_id)
         if (stream_id != 0) and (stream_id in self.stream_ids):
             self.blocked_stream_ids.add(stream_id)
 
-    @rule(stream_id=integers())
+    @rule(stream_id=integers())  # type: ignore[no-untyped-call]
     def unblock_stream(self, stream_id):
         self._run_action(self.tree.unblock, stream_id)
         self.blocked_stream_ids.discard(stream_id)
 
-    @invariant()
+    @invariant()  # type: ignore[no-untyped-call]
     def check_next_stream_consistent(self):
         """
         If we ask priority for the next stream, it always returns a sensible
