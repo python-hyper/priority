@@ -1,18 +1,20 @@
 Changelog
 =========
 
-2.0.0-dev
----------
+2.0.0 (2021-06-27)
+------------------
 
 **API Changes**
 
+- Python 3.6 is the minimal support Python version.
+- Support for Python 3.7 has been added.
+- Support for Python 3.8 has been added.
+- Support for Python 3.9 has been added.
 - Support for Python 2.7 has been removed.
 - Support for Python 3.3 has been removed.
 - Support for Python 3.4 has been removed.
 - Support for Python 3.5 has been removed.
 - Support for PyPy (Python 2.7 compatible) has been removed.
-- Support for Python 3.8 has been added.
-- Support for Python 3.9 has been added.
 - Add type hints throughout and support PEP 561 via a py.typed
   file. This should allow projects to type check their usage of this dependency.
 - Throw ``TypeError`` when creating a priority tree with a ``maximum_streams``
