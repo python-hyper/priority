@@ -4,6 +4,5 @@ graft test
 graft visualizer
 graft examples
 prune docs/build
-recursive-include *.py
 include README.rst LICENSE CHANGELOG.rst CONTRIBUTORS.rst tox.ini
 global-exclude *.pyc *.pyo *.swo *.swp *.map *.yml *.DS_Store
