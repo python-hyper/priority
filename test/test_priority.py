@@ -118,8 +118,8 @@ class TestStream:
         assert sorted(streams_by_id) == streams_by_id
 
     @given(
-        integers(min_value=1, max_value=2 ** 24),
-        integers(min_value=1, max_value=2 ** 24),
+        integers(min_value=1, max_value=2**24),
+        integers(min_value=1, max_value=2**24),
     )
     def test_stream_ordering(self, a, b):
         """
@@ -554,7 +554,7 @@ class PriorityStateMachine(RuleBasedStateMachine):
         self.stream_ids = set([0])
         self.blocked_stream_ids = set()
 
-    @rule(stream_id=integers())  # type: ignore[no-untyped-call]
+    @rule(stream_id=integers())
     def insert_stream(self, stream_id):
         try:
             self.tree.insert_stream(stream_id)
@@ -574,24 +574,24 @@ class PriorityStateMachine(RuleBasedStateMachine):
         else:
             assert stream_id in self.stream_ids
 
-    @rule(stream_id=integers())  # type: ignore[no-untyped-call]
+    @rule(stream_id=integers())
     def remove_stream(self, stream_id):
         self._run_action(self.tree.remove_stream, stream_id)
         if stream_id != 0:
             self.stream_ids.discard(stream_id)
 
-    @rule(stream_id=integers())  # type: ignore[no-untyped-call]
+    @rule(stream_id=integers())
     def block_stream(self, stream_id):
         self._run_action(self.tree.block, stream_id)
         if (stream_id != 0) and (stream_id in self.stream_ids):
             self.blocked_stream_ids.add(stream_id)
 
-    @rule(stream_id=integers())  # type: ignore[no-untyped-call]
+    @rule(stream_id=integers())
     def unblock_stream(self, stream_id):
         self._run_action(self.tree.unblock, stream_id)
         self.blocked_stream_ids.discard(stream_id)
 
-    @invariant()  # type: ignore[no-untyped-call]
+    @invariant()
     def check_next_stream_consistent(self):
         """
         If we ask priority for the next stream, it always returns a sensible

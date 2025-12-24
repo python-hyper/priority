@@ -14,12 +14,12 @@ import os
 import sys
 import re
 
-sys.path.insert(0, os.path.abspath('../..'))
+sys.path.insert(0, os.path.abspath("../.."))
 
 PROJECT_ROOT = os.path.dirname(__file__)
 # Get the version
 version_regex = r'__version__ = ["\']([^"\']*)["\']'
-with open(os.path.join(PROJECT_ROOT, '../../', 'src/priority/__init__.py')) as file_:
+with open(os.path.join(PROJECT_ROOT, "../../", "src/priority/__init__.py")) as file_:
     text = file_.read()
     match = re.search(version_regex, text)
     version = match.group(1)
@@ -27,9 +27,9 @@ with open(os.path.join(PROJECT_ROOT, '../../', 'src/priority/__init__.py')) as f
 
 # -- Project information -----------------------------------------------------
 
-project = 'priority'
-copyright = '2021, Cory Benfield'
-author = 'Cory Benfield'
+project = "priority"
+copyright = "2021, Cory Benfield"
+author = "Cory Benfield"
 release = version
 
 # -- General configuration ------------------------------------------------
@@ -38,29 +38,29 @@ release = version
 # extensions coming with Sphinx (named 'sphinx.ext.*') or your custom
 # ones.
 extensions = [
-    'sphinx.ext.autodoc',
-    'sphinx.ext.intersphinx',
-    'sphinx.ext.viewcode',
+    "sphinx.ext.autodoc",
+    "sphinx.ext.intersphinx",
+    "sphinx.ext.viewcode",
 ]
 
 # Add any paths that contain templates here, relative to this directory.
-templates_path = ['_templates']
+templates_path = ["_templates"]
 
 # The master toctree document.
-master_doc = 'index'
+master_doc = "index"
 
 # List of patterns, relative to source directory, that match files and
 # directories to ignore when looking for source files.
 exclude_patterns = []
 
 # Example configuration for intersphinx: refer to the Python standard library.
-intersphinx_mapping = {'http://docs.python.org/': None}
+intersphinx_mapping = {"python": ("http://docs.python.org/", None)}
 
 # -- Options for HTML output ----------------------------------------------
 
 # The theme to use for HTML and HTML Help pages.  See the documentation for
 # a list of builtin themes.
-html_theme = 'default'
+html_theme = "default"
 
 # Add any paths that contain custom static files (such as style sheets) here,
 # relative to this directory. They are copied after the builtin static files,
