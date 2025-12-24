@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 """
 test_priority
 ~~~~~~~~~~~~~
@@ -6,20 +5,18 @@ test_priority
 Tests for the Priority trees
 """
 
-import operator
 import collections
 import itertools
+import operator
+from collections.abc import Iterable
+from typing import Any
 
 import pytest
-
 from hypothesis import given, settings
-from hypothesis.stateful import invariant, RuleBasedStateMachine, rule
-from hypothesis.strategies import integers, lists, tuples, sampled_from
+from hypothesis.stateful import RuleBasedStateMachine, invariant, rule
+from hypothesis.strategies import integers, lists, sampled_from, tuples
 
 import priority
-
-from typing import Iterable, List, Dict, Any
-
 
 STREAMS_AND_WEIGHTS = lists(
     elements=tuples(integers(min_value=1), integers(min_value=1, max_value=255)),
@@ -59,7 +56,7 @@ def readme_tree():
 def active_readme_streams_from_filter(
     filtered: Iterable[int],
     blocked: bool = True,
-) -> List[int]:
+) -> list[int]:
     """
     Given a collection of filtered streams, determine which ones are active.
     This applies only to the readme tree at this time, though in future it
@@ -81,13 +78,13 @@ def active_readme_streams_from_filter(
     }
     filtered = set(filtered)
 
-    def get_expected(tree: Dict[Any, Any]) -> List[int]:
+    def get_expected(tree: dict[Any, Any]) -> list[int]:
         expected = []
 
         for stream_id in tree:
-            if stream_id not in filtered and blocked:
-                expected.append(stream_id)
-            elif stream_id in filtered and not blocked:
+            if (stream_id not in filtered and blocked) or (
+                stream_id in filtered and not blocked
+            ):
                 expected.append(stream_id)
             else:
                 expected.extend(get_expected(tree[stream_id]))
@@ -311,14 +308,14 @@ class TestPriorityTreeManual:
         p.insert_stream(stream_id=3, depends_on=1, exclusive=exclusive, weight=32)
 
         # Iterate 10 times to prove that the parent stream starts blocked.
-        first_ten_ids = [next(p) for _ in range(0, 10)]
+        first_ten_ids = [next(p) for _ in range(10)]
         assert first_ten_ids == [3] * 10
 
         # Unblock the parent.
         p.unblock(1)
 
         # Iterate 10 times, expecting only the parent.
-        next_ten_ids = [next(p) for _ in range(0, 10)]
+        next_ten_ids = [next(p) for _ in range(10)]
         assert next_ten_ids == [1] * 10
 
         # Insert a new stream into the tree with default priority.
@@ -326,7 +323,7 @@ class TestPriorityTreeManual:
 
         # Iterate 10 more times. Expect the parent, and the new stream, in
         # equal amounts.
-        next_ten_ids = [next(p) for _ in range(0, 10)]
+        next_ten_ids = [next(p) for _ in range(10)]
         assert next_ten_ids == [5, 1] * 5
 
     @pytest.mark.parametrize("exclusive", [True, False])
@@ -341,14 +338,14 @@ class TestPriorityTreeManual:
         p.reprioritize(stream_id=3, depends_on=1, exclusive=exclusive, weight=32)
 
         # Iterate 10 times to prove that the parent stream starts blocked.
-        first_ten_ids = [next(p) for _ in range(0, 10)]
+        first_ten_ids = [next(p) for _ in range(10)]
         assert first_ten_ids == [3] * 10
 
         # Unblock the parent.
         p.unblock(1)
 
         # Iterate 10 times, expecting only the parent.
-        next_ten_ids = [next(p) for _ in range(0, 10)]
+        next_ten_ids = [next(p) for _ in range(10)]
         assert next_ten_ids == [1] * 10
 
         # Insert a new stream into the tree with default priority.
@@ -356,7 +353,7 @@ class TestPriorityTreeManual:
 
         # Iterate 10 more times. Expect the parent, and the new stream, in
         # equal amounts.
-        next_ten_ids = [next(p) for _ in range(0, 10)]
+        next_ten_ids = [next(p) for _ in range(10)]
         assert next_ten_ids == [5, 1] * 5
 
     @pytest.mark.parametrize("count", range(2, 10000, 100))
@@ -386,7 +383,7 @@ class TestPriorityTreeManual:
 
         p.insert_stream(stream_id=5, depends_on=depends_on, exclusive=True)
 
-        next_ten_ids = [next(p) for _ in range(0, 10)]
+        next_ten_ids = [next(p) for _ in range(10)]
         assert next_ten_ids == [5] * 10
 
     @pytest.mark.parametrize("weight", [None, 0.5, float("inf"), "priority", object])

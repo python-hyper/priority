@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 """
 priority/tree
 ~~~~~~~~~~~~~
@@ -7,8 +6,6 @@ Implementation of the Priority tree data structure.
 """
 
 import heapq
-
-from typing import List, Tuple, Optional
 
 
 class PriorityError(Exception):
@@ -92,9 +89,9 @@ class Stream:
     def __init__(self, stream_id: int, weight: int = 16) -> None:
         self.stream_id = stream_id
         self.weight = weight
-        self.children: List[Stream] = []
-        self.parent: Optional[Stream] = None
-        self.child_queue: List[Tuple[int, Stream]] = []
+        self.children: list[Stream] = []
+        self.parent: Stream | None = None
+        self.child_queue: list[tuple[int, Stream]] = []
         self.active = True
         self.last_weight = 0
         self._deficit = 0
@@ -109,7 +106,7 @@ class Stream:
         # weight between 1 and 256 (inclusive)."
         if not isinstance(value, int):
             raise BadWeightError("Stream weight should be an integer")
-        elif not (1 <= value <= 256):
+        if not (1 <= value <= 256):
             raise BadWeightError("Stream weight must be between 1 and 256 (inclusive)")
         self._weight = value
 
@@ -158,7 +155,7 @@ class Stream:
         #   it in the old one
         self.children.remove(child)
 
-        new_queue: List[Tuple[int, Stream]] = []
+        new_queue: list[tuple[int, Stream]] = []
 
         while self.child_queue:
             level, stream = heapq.heappop(self.child_queue)
@@ -264,7 +261,7 @@ def _stream_cycle(new_parent: Stream, current: Stream) -> bool:
         parent = parent.parent  # type: ignore[assignment]
         if parent.stream_id == current.stream_id:
             return True
-        elif parent.stream_id == 0:
+        if parent.stream_id == 0:
             return False
 
     raise PriorityLoop(
@@ -339,7 +336,7 @@ class PriorityTree:
     def insert_stream(
         self,
         stream_id: int,
-        depends_on: Optional[int] = None,
+        depends_on: int | None = None,
         weight: int = 16,
         exclusive: bool = False,
     ) -> None:
@@ -383,7 +380,7 @@ class PriorityTree:
     def reprioritize(
         self,
         stream_id: int,
-        depends_on: Optional[int] = None,
+        depends_on: int | None = None,
         weight: int = 16,
         exclusive: bool = False,
     ) -> None:
