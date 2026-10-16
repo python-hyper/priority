@@ -428,7 +428,7 @@ class PriorityTree:
         # continue.
         if cycle:
             new_parent.parent.remove_child(  # type: ignore[union-attr]
-                new_parent,
+                new_parent, strip_children=False
             )
             current_stream.parent.add_child(  # type: ignore[union-attr]
                 new_parent,

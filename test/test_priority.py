@@ -252,6 +252,53 @@ class TestPriorityTreeManual:
         actual_result = [next(t) for _ in range(len(result))]
         assert actual_result == result
 
+    @pytest.mark.parametrize("exclusive", [True, False])
+    @pytest.mark.parametrize("descendant_parent", [1, 5])
+    def test_reprioritize_preserves_descendant_children(
+        self, exclusive, descendant_parent
+    ):
+        """
+        Moving a descendant to avoid a cycle keeps its subtree intact.
+        """
+        p = priority.PriorityTree()
+        # RFC 7540 Figure 5: A=1, B=3, C=5, D=7, E=9, F=11.
+        for stream_id, parent in [
+            (1, 0),
+            (3, 1),
+            (5, 1),
+            (7, descendant_parent),
+            (9, 5),
+            (11, 7),
+        ]:
+            p.insert_stream(stream_id, depends_on=parent)
+
+        p.reprioritize(1, depends_on=7, exclusive=exclusive)
+
+        assert {
+            stream_id: stream.parent.stream_id
+            for stream_id, stream in p._streams.items()
+            if stream_id != 0
+        } == {1: 7, 3: 1, 5: 1, 7: 0, 9: 5, 11: 1 if exclusive else 7}
+
+        for stream in p._streams.values():
+            expected_children = sorted(
+                child.stream_id
+                for child in p._streams.values()
+                if child.parent is stream
+            )
+            assert (
+                sorted(child.stream_id for child in stream.children)
+                == expected_children
+            )
+            assert (
+                sorted(child.stream_id for _, child in stream.child_queue)
+                == expected_children
+            )
+
+        p.block(7)
+        expected = [1] * 10 if exclusive else [1, 11] * 5
+        assert [next(p) for _ in range(10)] == expected
+
     def test_priority_tree_raises_error_inserting_duplicate(self):
         """
         Attempting to insert a stream that is already in the tree raises a
