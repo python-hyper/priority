@@ -357,7 +357,9 @@ class PriorityTree:
         if stream_id in self._streams:
             raise DuplicateStreamError("Stream %d already in tree" % stream_id)
 
-        if (len(self._streams) + 1) > self._maximum_streams:
+        # A missing dependency is inserted too, so reserve room for both nodes.
+        new_streams = 1 + int(bool(depends_on) and depends_on not in self._streams)
+        if (len(self._streams) + new_streams) > self._maximum_streams:
             raise TooManyStreamsError(
                 "Refusing to insert %d streams into priority tree at once"
                 % (self._maximum_streams + 1)

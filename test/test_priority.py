@@ -389,6 +389,38 @@ class TestPriorityTreeManual:
         next_ten_ids = [next(p) for _ in range(0, 10)]
         assert next_ten_ids == [5] * 10
 
+    @pytest.mark.parametrize("exclusive", (True, False))
+    def test_missing_parent_counts_toward_stream_limit(self, exclusive):
+        p = priority.PriorityTree(maximum_streams=3)
+        p.insert_stream(1)
+
+        with pytest.raises(priority.TooManyStreamsError):
+            p.insert_stream(5, depends_on=3, exclusive=exclusive)
+
+        # Neither the child nor its implicit parent may consume the last slot.
+        assert set(p._streams) == {0, 1}
+        assert [next(p) for _ in range(5)] == [1] * 5
+        p.insert_stream(3)
+        assert set(p._streams) == {0, 1, 3}
+
+    @pytest.mark.parametrize("exclusive", (True, False))
+    def test_missing_parent_can_fill_stream_limit(self, exclusive):
+        p = priority.PriorityTree(maximum_streams=3)
+        p.insert_stream(5, depends_on=3, exclusive=exclusive)
+
+        assert set(p._streams) == {0, 3, 5}
+        assert [next(p) for _ in range(5)] == [5] * 5
+
+    @pytest.mark.parametrize("exclusive", (True, False))
+    def test_existing_parent_does_not_consume_another_slot(self, exclusive):
+        p = priority.PriorityTree(maximum_streams=3)
+        p.insert_stream(3)
+        p.block(3)
+        p.insert_stream(5, depends_on=3, exclusive=exclusive)
+
+        assert set(p._streams) == {0, 3, 5}
+        assert [next(p) for _ in range(5)] == [5] * 5
+
     @pytest.mark.parametrize("weight", [None, 0.5, float("inf"), "priority", object])
     def test_stream_with_non_integer_weight_is_error(self, weight):
         """
