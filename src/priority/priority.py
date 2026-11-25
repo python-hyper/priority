@@ -81,6 +81,15 @@ class PseudoStreamError(PriorityError):
     pass
 
 
+def _validate_weight(value: int) -> None:
+    # RFC 7540 § 5.3.2: "All dependent streams are allocated an integer
+    # weight between 1 and 256 (inclusive)."
+    if not isinstance(value, int):
+        raise BadWeightError("Stream weight should be an integer")
+    elif not (1 <= value <= 256):
+        raise BadWeightError("Stream weight must be between 1 and 256 (inclusive)")
+
+
 class Stream:
     """
     Priority information for a given stream.
@@ -105,12 +114,7 @@ class Stream:
 
     @weight.setter
     def weight(self, value: int) -> None:
-        # RFC 7540 § 5.3.2: "All dependent streams are allocated an integer
-        # weight between 1 and 256 (inclusive)."
-        if not isinstance(value, int):
-            raise BadWeightError("Stream weight should be an integer")
-        elif not (1 <= value <= 256):
-            raise BadWeightError("Stream weight must be between 1 and 256 (inclusive)")
+        _validate_weight(value)
         self._weight = value
 
     def add_child(self, child: "Stream") -> None:
@@ -406,15 +410,17 @@ class PriorityTree:
         except KeyError:
             raise MissingStreamError("Stream %d not in tree" % stream_id)
 
+        if depends_on == stream_id:
+            raise PriorityLoop("Stream %d must not depend on itself" % stream_id)
+
+        _validate_weight(weight)
+
         # Update things in a specific order to make sure the calculation
-        # behaves properly. Specifically, we first update the weight. Then,
+        # behaves properly. Specifically, we first validate the weight. Then,
         # we check whether this stream is being made dependent on one of its
         # own dependents. Then, we remove this stream from its current parent
         # and move it to its new parent, taking its children with it.
         if depends_on:
-            if depends_on == stream_id:
-                raise PriorityLoop("Stream %d must not depend on itself" % stream_id)
-
             new_parent = self._get_or_insert_parent(depends_on)
             cycle = _stream_cycle(new_parent, current_stream)
         else:

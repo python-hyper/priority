@@ -443,6 +443,37 @@ class TestPriorityTreeManual:
                 stream_id=stream_id, depends_on=stream_id, exclusive=exclusive
             )
 
+    @pytest.mark.parametrize("weight", (0, 257, None, "invalid"))
+    @pytest.mark.parametrize("exclusive", (True, False))
+    def test_invalid_reprioritization_does_not_create_parent(self, weight, exclusive):
+        """Rejected weights leave the streams and scheduling tree unchanged."""
+        tree = priority.PriorityTree()
+        tree.insert_stream(1, weight=32)
+        tree.insert_stream(5, depends_on=1)
+        tree.block(5)
+
+        with pytest.raises(priority.BadWeightError):
+            tree.reprioritize(1, depends_on=3, weight=weight, exclusive=exclusive)
+
+        assert set(tree._streams) == {0, 1, 5}
+        assert tree._streams[1].weight == 32
+        assert tree._streams[1].parent is tree._streams[0]
+        assert tree._streams[5].parent is tree._streams[1]
+        assert [next(tree) for _ in range(4)] == [1] * 4
+
+    @pytest.mark.parametrize("exclusive", (True, False))
+    def test_reprioritization_capacity_error_preserves_weight(self, exclusive):
+        """A valid new weight is not applied when the parent cannot fit."""
+        tree = priority.PriorityTree(maximum_streams=2)
+        tree.insert_stream(1, weight=32)
+
+        with pytest.raises(priority.TooManyStreamsError):
+            tree.reprioritize(1, depends_on=3, weight=64, exclusive=exclusive)
+
+        assert set(tree._streams) == {0, 1}
+        assert tree._streams[1].weight == 32
+        assert tree._streams[1].parent is tree._streams[0]
+
     @pytest.mark.parametrize("exclusive", (True, False))
     @pytest.mark.parametrize("stream_id", (1, 5, 20, 32, 256))
     def test_reprioritize_depend_on_self_is_error(self, stream_id, exclusive):
